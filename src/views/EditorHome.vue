@@ -186,6 +186,7 @@ import { QResizeObserver } from "quasar";
 import cloneDeep from "clone-deep";
 import Mousetrap from "mousetrap";
 import { useStore } from "@/store";
+import { useDictionary } from "@/pinia-stores";
 import HeaderBar from "@/components/HeaderBar.vue";
 import AudioCell from "@/components/AudioCell.vue";
 import AudioDetail from "@/components/AudioDetail.vue";
@@ -222,6 +223,7 @@ const props =
   }>();
 
 const store = useStore();
+const dictionaryStore = useDictionary();
 
 const audioKeys = computed(() => store.state.audioKeys);
 const uiLocked = computed(() => store.getters.UI_LOCKED);
@@ -565,7 +567,7 @@ onMounted(async () => {
   });
 
   // 辞書を同期
-  await store.dispatch("SYNC_ALL_USER_DICT");
+  await dictionaryStore.syncAllUserDict();
 
   // プロジェクトファイルが指定されていればロード
   let projectFileLoaded = false;

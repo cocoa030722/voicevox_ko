@@ -22,7 +22,6 @@ import { projectStoreState, projectStore } from "./project";
 import { uiStoreState, uiStore } from "./ui";
 import { settingStoreState, settingStore } from "./setting";
 import { presetStoreState, presetStore } from "./preset";
-import { dictionaryStoreState, dictionaryStore } from "./dictionary";
 import { proxyStore, proxyStoreState } from "./proxy";
 import { createPartialStore } from "./vuex";
 import { engineStoreState, engineStore } from "./engine";
@@ -358,7 +357,6 @@ export const store = createStore<State, AllGetters, AllActions, AllMutations>({
     ...audioCommandStoreState,
     ...indexStoreState,
     ...presetStoreState,
-    ...dictionaryStoreState,
     ...proxyStoreState,
   },
 
@@ -371,7 +369,6 @@ export const store = createStore<State, AllGetters, AllActions, AllMutations>({
     ...projectStore.getters,
     ...settingStore.getters,
     ...presetStore.getters,
-    ...dictionaryStore.getters,
     ...audioCommandStore.getters,
     ...indexStore.getters,
     ...proxyStore.getters,
@@ -387,7 +384,6 @@ export const store = createStore<State, AllGetters, AllActions, AllMutations>({
     ...settingStore.mutations,
     ...audioCommandStore.mutations,
     ...presetStore.mutations,
-    ...dictionaryStore.mutations,
     ...indexStore.mutations,
     ...proxyStore.mutations,
   },
@@ -402,7 +398,6 @@ export const store = createStore<State, AllGetters, AllActions, AllMutations>({
     ...settingStore.actions,
     ...audioCommandStore.actions,
     ...presetStore.actions,
-    ...dictionaryStore.actions,
     ...indexStore.actions,
     ...proxyStore.actions,
   },
