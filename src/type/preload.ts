@@ -430,6 +430,15 @@ export type MorphableTargetInfoTable = {
       };
 };
 
+export type optimalPitchRangeRecord = {
+  [targetStyleId: StyleId]: optimalPitchRangeItem;
+};
+
+export type optimalPitchRangeItem = {
+  low: number;
+  high: number;
+};
+
 export const hotkeyActionNameSchema = z.enum([
   "音声書き出し",
   "選択音声を書き出し",
@@ -536,6 +545,7 @@ export const experimentalSettingSchema = z.object({
   enableMultiSelect: z.boolean().default(false),
   shouldKeepTuningOnTextChange: z.boolean().default(false),
   showPitchInSongEditor: z.boolean().default(false),
+  enableOptimalPitchRange: z.boolean().default(false),
 });
 
 export type ExperimentalSettingType = z.infer<typeof experimentalSettingSchema>;
