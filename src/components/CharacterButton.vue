@@ -6,6 +6,12 @@
     :disable="uiLocked"
     :class="{ opaque: loading }"
     aria-haspopup="menu"
+    @click="
+      () => {
+        updateMenuHeight();
+        openMenu();
+      }
+    "
   >
     <!-- q-imgだとdisableのタイミングで点滅する -->
     <div class="icon-container">
@@ -22,13 +28,9 @@
     <div v-if="loading" class="loading">
       <QSpinner color="primary" size="1.6rem" :thickness="7" />
     </div>
-    <QMenu
-      class="character-menu"
-      transition-show="none"
-      transition-hide="none"
-      :max-height="maxMenuHeight"
-      @before-show="updateMenuHeight"
-    >
+  </QBtn>
+  <Teleport to="#character-icon-teleport">
+    <div v-if="hasMenuOpen" class="character-menu">
       <QList style="min-width: max-content" class="character-item-container">
         <QItem
           v-if="selectedStyleInfo == undefined && !emptiable"
@@ -104,7 +106,6 @@
             <!-- スタイルが2つ以上あるものだけ、スタイル選択ボタンを表示する-->
             <template v-if="characterInfo.metas.styles.length >= 2">
               <QSeparator vertical />
-
               <div
                 class="flex items-center q-px-sm q-py-none cursor-pointer"
                 :class="
@@ -188,13 +189,13 @@
           </QBtnGroup>
         </QItem>
       </QList>
-    </QMenu>
-  </QBtn>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { debounce, QBtn } from "quasar";
-import { computed, Ref, ref } from "vue";
+import { computed, CSSProperties, Ref, ref } from "vue";
 import { base64ImageToUri } from "@/helpers/imageHelper";
 import { useStore } from "@/store";
 import { CharacterInfo, SpeakerId, Voice } from "@/type/preload";
@@ -297,7 +298,6 @@ const getDefaultStyle = (speakerUuid: SpeakerId) => {
     ) ?? characterInfo?.metas.styles[0]; // デフォルトのスタイルIDが見つからない場合stylesの先頭を選択する
 
   if (defaultStyle == undefined) throw new Error("defaultStyle == undefined");
-
   return defaultStyle;
 };
 
@@ -309,7 +309,6 @@ const onSelectSpeaker = (speakerUuid: SpeakerId) => {
     styleId: style.styleId,
   });
 };
-
 const subMenuOpenFlags = ref(
   [...Array(props.characterInfos.length)].map(() => false),
 );
@@ -335,6 +334,38 @@ const updateMenuHeight = () => {
   // AudioDetailよりボタンが下に来ることはないのでその最低高185pxに余裕を持たせた170pxを最小の高さにする。
   // pxで指定するとウインドウサイズ変更に追従できないので ウインドウの高さの96% - ボタンの下端の座標 でメニューの高さを決定する。
   maxMenuHeight.value = `max(170px, min(${heightLimit}, calc(96vh - ${buttonRect.bottom}px)))`;
+};
+
+const hasMenuOpen = ref(false);
+const shouldShowMenu: Ref<CSSProperties["visibility"]> = ref("hidden");
+const menuPosition = ref({ top: 0, left: 0 });
+const menuPositionTopStyle = computed(() => `${menuPosition.value.top}px`);
+const menuPositionLeftStyle = computed(() => `${menuPosition.value.left}px`);
+
+const hideMenu = debounce(() => {
+  document.removeEventListener("click", hideMenu, { capture: true });
+  shouldShowMenu.value = "hidden";
+}, 50);
+const showMenu = debounce(() => {
+  document.addEventListener("click", hideMenu, { capture: true });
+  shouldShowMenu.value = "visible";
+}, 50);
+
+const openMenu = () => {
+  hasMenuOpen.value = true;
+
+  if (buttonRef.value == undefined)
+    throw new Error("buttonRef.value == undefined");
+  const el = buttonRef.value.$el;
+  if (!(el instanceof Element)) throw new Error("!(el instanceof Element)");
+  const buttonRect = el.getBoundingClientRect();
+  menuPosition.value = { top: buttonRect.bottom, left: buttonRect.left };
+
+  if (shouldShowMenu.value === "hidden") {
+    showMenu();
+  } else {
+    hideMenu();
+  }
 };
 </script>
 
@@ -383,6 +414,15 @@ const updateMenuHeight = () => {
 }
 
 .character-menu {
+  position: fixed;
+  overflow-y: scroll;
+  background: colors.$background;
+  max-height: v-bind(maxMenuHeight);
+  visibility: v-bind(shouldShowMenu);
+  top: v-bind(menuPositionTopStyle);
+  left: v-bind(menuPositionLeftStyle);
+  z-index: 10;
+
   .character-item-container {
     display: flex;
     flex-direction: column;
