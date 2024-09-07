@@ -21,6 +21,11 @@
         value: 'PITCH',
         slot: 'PITCH',
       },
+      {
+        icon: 'show_chart',
+        value: 'VOLUME',
+        slot: 'VOLUME',
+      },
     ]"
     @update:modelValue="changeEditTarget"
     ><template #NOTE
@@ -29,6 +34,11 @@
     <template #PITCH>
       <QTooltip :delay="500" anchor="bottom middle"
         >ピッチ編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去</QTooltip
+      >
+    </template>
+    <template #VOLUME>
+      <QTooltip :delay="500" anchor="bottom middle"
+        >ボリューム倍率編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去</QTooltip
       >
     </template>
   </QBtnToggle>

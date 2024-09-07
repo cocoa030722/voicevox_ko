@@ -337,6 +337,7 @@ export function createDefaultTrack(): Track {
     volumeRangeAdjustment: 0,
     notes: [],
     pitchEditData: [],
+    volumeEditData: [],
 
     solo: false,
     mute: false,
@@ -373,6 +374,14 @@ export function isValidVolumeRangeAdjustment(volumeRangeAdjustment: number) {
 
 export function isValidPitchEditData(pitchEditData: number[]) {
   return pitchEditData.every(
+    (value) =>
+      Number.isFinite(value) &&
+      (value > 0 || value === VALUE_INDICATING_NO_DATA),
+  );
+}
+
+export function isValidVolumeEditData(volumeEditData: number[]) {
+  return volumeEditData.every(
     (value) =>
       Number.isFinite(value) &&
       (value > 0 || value === VALUE_INDICATING_NO_DATA),
@@ -505,6 +514,47 @@ export function applyPitchEdit(
     const voiced = !unvoicedPhonemes.includes(phoneme);
     if (voiced && pitchEditData[i] !== VALUE_INDICATING_NO_DATA) {
       f0[i - singingGuideStartFrame] = pitchEditData[i];
+    }
+  }
+}
+
+export function applyVolumeEdit(
+  singingGuide: SingingGuide,
+  volumeEditData: number[],
+  editFrameRate: number,
+) {
+  // 歌い方のフレームレートと編集フレームレートが一致しない場合はエラー
+  // TODO: 補間するようにする
+  if (singingGuide.frameRate !== editFrameRate) {
+    throw new Error(
+      "The frame rate between the singing guide and the edit data does not match.",
+    );
+  }
+  const unvoicedPhonemes = UNVOICED_PHONEMES;
+  const volume = singingGuide.query.volume;
+  const phonemes = singingGuide.query.phonemes;
+
+  // 各フレームの音素の配列を生成する
+  const framePhonemes = convertToFramePhonemes(phonemes);
+  if (volume.length !== framePhonemes.length) {
+    throw new Error("volume.length and framePhonemes.length do not match.");
+  }
+
+  // 歌い方の開始フレームと終了フレームを計算する
+  const singingGuideFrameLength = volume.length;
+  const singingGuideStartFrame = Math.round(
+    singingGuide.startTime * singingGuide.frameRate,
+  );
+  const singingGuideEndFrame = singingGuideStartFrame + singingGuideFrameLength;
+
+  // ピッチ編集をf0に適用する
+  const startFrame = Math.max(0, singingGuideStartFrame);
+  const endFrame = Math.min(volumeEditData.length, singingGuideEndFrame);
+  for (let i = startFrame; i < endFrame; i++) {
+    const phoneme = framePhonemes[i - singingGuideStartFrame];
+    const voiced = !unvoicedPhonemes.includes(phoneme);
+    if (voiced && volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
+      volume[i - singingGuideStartFrame] = volumeEditData[i];
     }
   }
 }

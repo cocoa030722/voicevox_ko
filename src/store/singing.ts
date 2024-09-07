@@ -61,8 +61,10 @@ import {
   calculateSingingVoiceSourceHash,
   decibelToLinear,
   applyPitchEdit,
+  applyVolumeEdit,
   VALUE_INDICATING_NO_DATA,
   isValidPitchEditData,
+  isValidVolumeEditData,
   calculatePhraseSourceHash,
   isValidTempos,
   isValidTimeSignatures,
@@ -742,6 +744,59 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
     },
     async action({ dispatch, commit }, { trackId }) {
       commit("CLEAR_PITCH_EDIT_DATA", { trackId });
+
+      dispatch("RENDER");
+    },
+  },
+  SET_VOLUME_EDIT_DATA: {
+    // ピッチ編集データをセットする。
+    // track.pitchEditDataの長さが足りない場合は、伸長も行う。
+    mutation(state, { volumeArray, startFrame, trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      const pitchEditData = track.volumeEditData;
+      const tempData = [...pitchEditData];
+      const endFrame = startFrame + volumeArray.length;
+      if (tempData.length < endFrame) {
+        const valuesToPush = new Array(endFrame - tempData.length).fill(
+          VALUE_INDICATING_NO_DATA,
+        );
+        tempData.push(...valuesToPush);
+      }
+      tempData.splice(startFrame, volumeArray.length, ...volumeArray);
+      track.volumeEditData = tempData;
+    },
+    async action({ dispatch, commit }, { volumeArray, startFrame, trackId }) {
+      if (startFrame < 0) {
+        throw new Error("startFrame must be greater than or equal to 0.");
+      }
+      if (!isValidVolumeEditData(volumeArray)) {
+        throw new Error("The pitch edit data is invalid.");
+      }
+      commit("SET_VOLUME_EDIT_DATA", { volumeArray, startFrame, trackId });
+
+      dispatch("RENDER");
+    },
+  },
+
+  ERASE_VOLUME_EDIT_DATA: {
+    mutation(state, { startFrame, frameLength, trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      const pitchEditData = track.pitchEditData;
+      const tempData = [...pitchEditData];
+      const endFrame = Math.min(startFrame + frameLength, tempData.length);
+      tempData.fill(VALUE_INDICATING_NO_DATA, startFrame, endFrame);
+      track.pitchEditData = tempData;
+    },
+  },
+
+  CLEAR_VOLUME_EDIT_DATA: {
+    // ピッチ編集データを失くす。
+    mutation(state, { trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      track.pitchEditData = [];
+    },
+    async action({ dispatch, commit }, { trackId }) {
+      commit("CLEAR_VOLUME_EDIT_DATA", { trackId });
 
       dispatch("RENDER");
     },
@@ -1632,6 +1687,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
               // 歌い方をコピーして、ピッチ編集を適用する
               singingGuide = structuredClone(toRaw(singingGuide));
               applyPitchEdit(singingGuide, track.pitchEditData, editFrameRate);
+              applyVolumeEdit(singingGuide, track.pitchEditData, editFrameRate);
 
               const calculatedHash = await calculateSingingVoiceSourceHash({
                 singer: singerAndFrameRate.singer,
@@ -2626,6 +2682,54 @@ export const singingCommandStore = transformCommandStore(
           throw new Error("frameLength must be at least 1.");
         }
         commit("COMMAND_ERASE_PITCH_EDIT_DATA", {
+          startFrame,
+          frameLength,
+          trackId,
+        });
+
+        dispatch("RENDER");
+      },
+    },
+    COMMAND_SET_VOLUME_EDIT_DATA: {
+      mutation(draft, { volumeArray, startFrame, trackId }) {
+        singingStore.mutations.SET_VOLUME_EDIT_DATA(draft, {
+          volumeArray,
+          startFrame,
+          trackId,
+        });
+      },
+      action({ commit, dispatch }, { volumeArray, startFrame, trackId }) {
+        if (startFrame < 0) {
+          throw new Error("startFrame must be greater than or equal to 0.");
+        }
+        if (!isValidVolumeEditData(volumeArray)) {
+          throw new Error("The volume edit data is invalid.");
+        }
+        commit("COMMAND_SET_VOLUME_EDIT_DATA", {
+          volumeArray,
+          startFrame,
+          trackId,
+        });
+
+        dispatch("RENDER");
+      },
+    },
+    COMMAND_ERASE_VOLUME_EDIT_DATA: {
+      mutation(draft, { startFrame, frameLength, trackId }) {
+        singingStore.mutations.ERASE_VOLUME_EDIT_DATA(draft, {
+          startFrame,
+          frameLength,
+          trackId,
+        });
+      },
+      action({ commit, dispatch }, { startFrame, frameLength, trackId }) {
+        if (startFrame < 0) {
+          throw new Error("startFrame must be greater than or equal to 0.");
+        }
+        if (frameLength < 1) {
+          throw new Error("frameLength must be at least 1.");
+        }
+        commit("COMMAND_ERASE_VOLUME_EDIT_DATA", {
           startFrame,
           frameLength,
           trackId,

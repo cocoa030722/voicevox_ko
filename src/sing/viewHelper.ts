@@ -134,6 +134,20 @@ export async function calculatePitchDataHash(pitchData: PitchData) {
   return pitchDataHashSchema.parse(hash);
 }
 
+export type VolumeData = {
+  readonly ticksArray: number[];
+  readonly data: number[];
+};
+
+const VolumeDataHashSchema = z.string().brand<"VolumeDataHash">();
+
+export type VolumeDataHash = z.infer<typeof VolumeDataHashSchema>;
+
+export async function calculateVolumeDataHash(volumeData: VolumeData) {
+  const hash = await calculateHash(volumeData);
+  return VolumeDataHashSchema.parse(hash);
+}
+
 export type MouseButton = "LEFT_BUTTON" | "RIGHT_BUTTON" | "OTHER_BUTTON";
 
 export function getButton(event: MouseEvent): MouseButton {

@@ -820,7 +820,7 @@ export type PhraseSource = {
 export const phraseSourceHashSchema = z.string().brand<"PhraseSourceHash">();
 export type PhraseSourceHash = z.infer<typeof phraseSourceHashSchema>;
 
-export type SequencerEditTarget = "NOTE" | "PITCH";
+export type SequencerEditTarget = "NOTE" | "PITCH" | "VOLUME";
 
 export type SingingStoreState = {
   tpqn: number; // Ticks Per Quarter Note
@@ -976,6 +976,24 @@ export type SingingStoreTypes = {
   };
 
   CLEAR_PITCH_EDIT_DATA: {
+    mutation: { trackId: TrackId };
+    action(payload: { trackId: TrackId }): void;
+  };
+
+  SET_VOLUME_EDIT_DATA: {
+    mutation: { volumeArray: number[]; startFrame: number; trackId: TrackId };
+    action(payload: {
+      volumeArray: number[];
+      startFrame: number;
+      trackId: TrackId;
+    }): void;
+  };
+
+  ERASE_VOLUME_EDIT_DATA: {
+    mutation: { startFrame: number; frameLength: number; trackId: TrackId };
+  };
+
+  CLEAR_VOLUME_EDIT_DATA: {
     mutation: { trackId: TrackId };
     action(payload: { trackId: TrackId }): void;
   };
@@ -1319,6 +1337,24 @@ export type SingingCommandStoreTypes = {
   };
 
   COMMAND_ERASE_PITCH_EDIT_DATA: {
+    mutation: { startFrame: number; frameLength: number; trackId: TrackId };
+    action(payload: {
+      startFrame: number;
+      frameLength: number;
+      trackId: TrackId;
+    }): void;
+  };
+
+  COMMAND_SET_VOLUME_EDIT_DATA: {
+    mutation: { volumeArray: number[]; startFrame: number; trackId: TrackId };
+    action(payload: {
+      volumeArray: number[];
+      startFrame: number;
+      trackId: TrackId;
+    }): void;
+  };
+
+  COMMAND_ERASE_VOLUME_EDIT_DATA: {
     mutation: { startFrame: number; frameLength: number; trackId: TrackId };
     action(payload: {
       startFrame: number;

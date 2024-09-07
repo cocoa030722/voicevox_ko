@@ -6,7 +6,7 @@
       'preview-lyric': previewLyric != undefined,
       overlapping: hasOverlappingError,
       'invalid-phrase': hasPhraseError,
-      'below-pitch': editTargetIsPitch,
+      'below-pitch': editTargetIsPitch || editTargetIsVolume,
     }"
     :style="{
       width: `${width}px`,
@@ -128,6 +128,9 @@ const editTargetIsNote = computed(() => {
 });
 const editTargetIsPitch = computed(() => {
   return state.sequencerEditTarget === "PITCH";
+});
+const editTargetIsVolume = computed(() => {
+  return state.sequencerEditTarget === "VOLUME";
 });
 const hasOverlappingError = computed(() => {
   return props.isOverlapping && !props.isPreview;
