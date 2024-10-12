@@ -177,8 +177,11 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
       const baseX = tickToBaseX(ticks, tpqn);
       const x = baseX * zoomX - offsetX;
       const linear = volumeData.data[i];
+      if(Number.isNaN(linear)||linear === undefined){
+        continue;
+      }
       const db = linearToDecibel(linear);
-      const y = db * -120 * zoomY - offsetY;//- ;
+      const y = db * -10 * zoomY + 250;//- ;
       lineStrip.setPoint(i, x, y);
     }
     lineStrip.update();
@@ -257,7 +260,7 @@ const setVolumeDataToVolumeLine = async (
 };
 
 const generateOriginalVolumeData = () => {
-  const unvoicedPhonemes = UNVOICED_PHONEMES;
+  //const unvoicedPhonemes = UNVOICED_PHONEMES;
   const frameRate = editFrameRate.value; // f0（元のピッチ）は編集フレームレートで表示する
 
   // 選択中のトラックで使われている歌い方のf0を結合してピッチデータを生成する
@@ -291,12 +294,12 @@ const generateOriginalVolumeData = () => {
 
     // 無声子音区間以外のf0をtempDataにコピーする
     // NOTE: 無声子音区間は音程が無く、f0の値が大きく上下するので表示しない
-    // if (tempData.length < singingGuideEndFrame) {
-    //   const valuesToPush = new Array(
-    //     singingGuideEndFrame - tempData.length,
-    //   ).fill(VALUE_INDICATING_NO_DATA);
-    //   tempData.push(...valuesToPush);
-    // }
+    if (tempData.length < singingGuideEndFrame) {
+      const valuesToPush = new Array(
+        singingGuideEndFrame - tempData.length,
+      ).fill(VALUE_INDICATING_NO_DATA);
+      tempData.push(...valuesToPush);
+    }
     const startFrame = Math.max(0, singingGuideStartFrame);
     const endFrame = singingGuideEndFrame;
     for (let i = startFrame; i < endFrame; i++) {

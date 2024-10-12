@@ -74,7 +74,7 @@
     </div>
     <SequencerPitch
       v-if="editTarget === 'PITCH'"
-      class="sequencer-pitch"
+      class="sequencer-curve"
       :style="{
         marginRight: `${scrollBarWidth}px`,
         marginBottom: `${scrollBarWidth}px`,
@@ -85,7 +85,7 @@
     />
     <SequencerVolume
       v-if="editTarget === 'VOLUME'"
-      class="sequencer-pitch"
+      class="sequencer-curve"
       :style="{
         marginRight: `${scrollBarWidth}px`,
         marginBottom: `${scrollBarWidth}px`,
