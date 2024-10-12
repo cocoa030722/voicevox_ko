@@ -749,12 +749,12 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
     },
   },
   SET_VOLUME_EDIT_DATA: {
-    // ピッチ編集データをセットする。
-    // track.pitchEditDataの長さが足りない場合は、伸長も行う。
+    // ボリューム編集データをセットする。
+    // track.volumeEditDataの長さが足りない場合は、伸長も行う。
     mutation(state, { volumeArray, startFrame, trackId }) {
       const track = getOrThrow(state.tracks, trackId);
-      const pitchEditData = track.volumeEditData;
-      const tempData = [...pitchEditData];
+      const volumeEditData = track.volumeEditData;
+      const tempData = [...volumeEditData];
       const endFrame = startFrame + volumeArray.length;
       if (tempData.length < endFrame) {
         const valuesToPush = new Array(endFrame - tempData.length).fill(
@@ -781,11 +781,11 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
   ERASE_VOLUME_EDIT_DATA: {
     mutation(state, { startFrame, frameLength, trackId }) {
       const track = getOrThrow(state.tracks, trackId);
-      const pitchEditData = track.pitchEditData;
-      const tempData = [...pitchEditData];
+      const volumeEditData = track.volumeEditData;
+      const tempData = [...volumeEditData];
       const endFrame = Math.min(startFrame + frameLength, tempData.length);
       tempData.fill(VALUE_INDICATING_NO_DATA, startFrame, endFrame);
-      track.pitchEditData = tempData;
+      track.volumeEditData = tempData;
     },
   },
 
@@ -1687,7 +1687,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
               // 歌い方をコピーして、ピッチ編集を適用する
               singingGuide = structuredClone(toRaw(singingGuide));
               applyPitchEdit(singingGuide, track.pitchEditData, editFrameRate);
-              applyVolumeEdit(singingGuide, track.pitchEditData, editFrameRate);
+              applyVolumeEdit(singingGuide, track.volumeEditData, editFrameRate);
 
               const calculatedHash = await calculateSingingVoiceSourceHash({
                 singer: singerAndFrameRate.singer,

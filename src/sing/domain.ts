@@ -552,8 +552,7 @@ export function applyVolumeEdit(
   const endFrame = Math.min(volumeEditData.length, singingGuideEndFrame);
   for (let i = startFrame; i < endFrame; i++) {
     const phoneme = framePhonemes[i - singingGuideStartFrame];
-    const voiced = !unvoicedPhonemes.includes(phoneme);
-    if (voiced && volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
+    if (volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
       volume[i - singingGuideStartFrame] = volumeEditData[i];
     }
   }

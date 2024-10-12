@@ -188,6 +188,7 @@ import {
   getNoteDuration,
   getStartTicksOfPhrase,
   noteNumberToFrequency,
+  decibelToLinear,
   tickToSecond,
 } from "@/sing/domain";
 import {
@@ -196,6 +197,8 @@ import {
   baseXToTick,
   noteNumberToBaseY,
   baseYToNoteNumber,
+  viewYToDecibel,
+  decibelToViewY,
   keyInfos,
   getDoremiFromNoteNumber,
   ZOOM_X_MIN,
@@ -426,7 +429,14 @@ const previewVolumeEdit = ref<
   | { type: "erase"; startFrame: number; frameLength: number }
   | undefined
 >(undefined);
-const prevCursorPos = { frame: 0, frequency: 0 }; // 前のカーソル位置
+ // 前のカーソル位置
+// const prevCursorPos = ref<
+//   | { prevCursorFrame: number, prevCursorFrequency: number,prevCursorVolume: number }
+//   | undefined
+// >(undefined);
+let prevCursorFrame: number = 0;
+let prevCursorFrequency: number = 0;
+let prevCursorVolume: number = 0;
 
 // 歌詞を編集中のノート
 const editingLyricNote = computed(() => {
@@ -652,27 +662,27 @@ const previewDrawPitch = () => {
     );
   }
 
-  if (cursorFrame === prevCursorPos.frame) {
+  if (cursorFrame === prevCursorFrame) {
     const i = cursorFrame - tempPitchEdit.startFrame;
     tempPitchEdit.data[i] = cursorFrequency;
-  } else if (cursorFrame < prevCursorPos.frame) {
-    for (let i = cursorFrame; i <= prevCursorPos.frame; i++) {
+  } else if (cursorFrame < prevCursorFrame) {
+    for (let i = cursorFrame; i <= prevCursorFrame; i++) {
       tempPitchEdit.data[i - tempPitchEdit.startFrame] = Math.exp(
         linearInterpolation(
           cursorFrame,
           Math.log(cursorFrequency),
-          prevCursorPos.frame,
-          Math.log(prevCursorPos.frequency),
+          prevCursorFrame,
+          Math.log(prevCursorFrequency),
           i,
         ),
       );
     }
   } else {
-    for (let i = prevCursorPos.frame; i <= cursorFrame; i++) {
+    for (let i = prevCursorFrame; i <= cursorFrame; i++) {
       tempPitchEdit.data[i - tempPitchEdit.startFrame] = Math.exp(
         linearInterpolation(
-          prevCursorPos.frame,
-          Math.log(prevCursorPos.frequency),
+          prevCursorFrame,
+          Math.log(prevCursorFrequency),
           cursorFrame,
           Math.log(cursorFrequency),
           i,
@@ -682,83 +692,10 @@ const previewDrawPitch = () => {
   }
 
   previewPitchEdit.value = tempPitchEdit;
-  prevCursorPos.frame = cursorFrame;
-  prevCursorPos.frequency = cursorFrequency;
+  prevCursorFrame = cursorFrame;
+  prevCursorFrequency = cursorFrequency;
 };
 
-// ピッチを描く処理を行う
-const previewDrawVolume = () => {
-  if (previewVolumeEdit.value == undefined) {
-    throw new Error("previewVolumeEdit.value is undefined.");
-  }
-  if (previewVolumeEdit.value.type !== "draw") {
-    throw new Error("previewVolumeEdit.value.type is not draw.");
-  }
-  const frameRate = editFrameRate.value;
-  const cursorBaseX = (scrollX.value + cursorX.value) / zoomX.value;
-  const cursorBaseY = (scrollY.value + cursorY.value) / zoomY.value;
-  const cursorTicks = baseXToTick(cursorBaseX, tpqn.value);
-  const cursorSeconds = tickToSecond(cursorTicks, tempos.value, tpqn.value);
-  const cursorFrame = Math.round(cursorSeconds * frameRate);
-  const cursorNoteNumber = baseYToNoteNumber(cursorBaseY, false);
-  const cursorFrequency = noteNumberToFrequency(cursorNoteNumber);
-  if (cursorFrame < 0) {
-    return;
-  }
-  const tempVolumeEdit = {
-    ...previewVolumeEdit.value,
-    data: [...previewVolumeEdit.value.data],
-  };
-
-  if (cursorFrame < tempVolumeEdit.startFrame) {
-    const numOfFramesToUnshift = tempVolumeEdit.startFrame - cursorFrame;
-    tempVolumeEdit.data = new Array(numOfFramesToUnshift)
-      .fill(0)
-      .concat(tempVolumeEdit.data);
-      tempVolumeEdit.startFrame = cursorFrame;
-  }
-
-  const lastFrame = tempVolumeEdit.startFrame + tempVolumeEdit.data.length - 1;
-  if (cursorFrame > lastFrame) {
-    const numOfFramesToPush = cursorFrame - lastFrame;
-    tempVolumeEdit.data = tempVolumeEdit.data.concat(
-      new Array(numOfFramesToPush).fill(0),
-    );
-  }
-
-  if (cursorFrame === prevCursorPos.frame) {
-    const i = cursorFrame - tempVolumeEdit.startFrame;
-    tempVolumeEdit.data[i] = cursorFrequency;
-  } else if (cursorFrame < prevCursorPos.frame) {
-    for (let i = cursorFrame; i <= prevCursorPos.frame; i++) {
-      tempVolumeEdit.data[i - tempVolumeEdit.startFrame] = Math.exp(
-        linearInterpolation(
-          cursorFrame,
-          Math.log(cursorFrequency),
-          prevCursorPos.frame,
-          Math.log(prevCursorPos.frequency),
-          i,
-        ),
-      );
-    }
-  } else {
-    for (let i = prevCursorPos.frame; i <= cursorFrame; i++) {
-      tempVolumeEdit.data[i - tempVolumeEdit.startFrame] = Math.exp(
-        linearInterpolation(
-          prevCursorPos.frame,
-          Math.log(prevCursorPos.frequency),
-          cursorFrame,
-          Math.log(cursorFrequency),
-          i,
-        ),
-      );
-    }
-  }
-
-  previewVolumeEdit.value = tempVolumeEdit;
-  prevCursorPos.frame = cursorFrame;
-  prevCursorPos.frequency = cursorFrequency;
-};
 // ドラッグした範囲のピッチ編集データを消去する処理を行う
 const previewErasePitch = () => {
   if (previewPitchEdit.value == undefined) {
@@ -788,7 +725,83 @@ const previewErasePitch = () => {
   }
 
   previewPitchEdit.value = tempPitchEdit;
-  prevCursorPos.frame = cursorFrame;
+  prevCursorFrame = cursorFrame;
+};
+
+
+// ボリュームを描く処理を行う
+const previewDrawVolume = () => {
+  if (previewVolumeEdit.value == undefined) {
+    throw new Error("previewVolumeEdit.value is undefined.");
+  }
+  if (previewVolumeEdit.value.type !== "draw") {
+    throw new Error("previewVolumeEdit.value.type is not draw.");
+  }
+  const frameRate = editFrameRate.value;
+  const cursorBaseX = (scrollX.value + cursorX.value) / zoomX.value;
+  const cursorBaseY = (scrollY.value + cursorY.value) / zoomY.value;
+  const cursorTicks = baseXToTick(cursorBaseX, tpqn.value);
+  const cursorSeconds = tickToSecond(cursorTicks, tempos.value, tpqn.value);
+  const cursorFrame = Math.round(cursorSeconds * frameRate);
+  //const cursorNoteNumber = baseYToNoteNumber(cursorBaseY, false);
+  const cursorDecibel = viewYToDecibel(cursorY.value);
+  const cursorVolume = decibelToLinear(cursorDecibel);
+  if (cursorFrame < 0) {
+    return;
+  }
+  const tempVolumeEdit = {
+    ...previewVolumeEdit.value,
+    data: [...previewVolumeEdit.value.data],
+  };
+
+  if (cursorFrame < tempVolumeEdit.startFrame) {
+    const numOfFramesToUnshift = tempVolumeEdit.startFrame - cursorFrame;
+    tempVolumeEdit.data = new Array(numOfFramesToUnshift)
+      .fill(0)
+      .concat(tempVolumeEdit.data);
+      tempVolumeEdit.startFrame = cursorFrame;
+  }
+
+  const lastFrame = tempVolumeEdit.startFrame + tempVolumeEdit.data.length - 1;
+  if (cursorFrame > lastFrame) {
+    const numOfFramesToPush = cursorFrame - lastFrame;
+    tempVolumeEdit.data = tempVolumeEdit.data.concat(
+      new Array(numOfFramesToPush).fill(0),
+    );
+  }
+
+  if (cursorFrame === prevCursorFrame) {
+    const i = cursorFrame - tempVolumeEdit.startFrame;
+    tempVolumeEdit.data[i] = cursorVolume;
+  } else if (cursorFrame < prevCursorFrame) {
+    for (let i = cursorFrame; i <= prevCursorFrame; i++) {
+      tempVolumeEdit.data[i - tempVolumeEdit.startFrame] = Math.exp(
+        linearInterpolation(
+          cursorFrame,
+          Math.log(cursorVolume),
+          prevCursorFrame,
+          Math.log(prevCursorVolume),
+          i,
+        ),
+      );
+    }
+  } else {
+    for (let i = prevCursorFrame; i <= cursorFrame; i++) {
+      tempVolumeEdit.data[i - tempVolumeEdit.startFrame] = Math.exp(
+        linearInterpolation(
+          prevCursorFrame,
+          Math.log(prevCursorVolume),
+          cursorFrame,
+          Math.log(cursorVolume),
+          i,
+        ),
+      );
+    }
+  }
+
+  previewVolumeEdit.value = tempVolumeEdit;
+  prevCursorFrame = cursorFrame;
+  prevCursorVolume = cursorFrequency;
 };
 
 const previewEraseVolume = () => {
@@ -819,7 +832,7 @@ const previewEraseVolume = () => {
   }
 
   previewVolumeEdit.value = tempVolumeEdit;
-  prevCursorPos.frame = cursorFrame;
+  prevCursorFrame = cursorFrame;
 };
 
 const preview = () => {
@@ -977,8 +990,8 @@ const startPreview = (event: MouseEvent, mode: PreviewMode, note?: Note) => {
     } else {
       throw new Error("Unknown preview mode.");
     }
-    prevCursorPos.frame = cursorFrame;
-    prevCursorPos.frequency = cursorFrequency;
+    prevCursorFrame = cursorFrame;
+    prevCursorFrequency = cursorFrequency;
   } else if (editTarget.value === "VOLUME") {
     const frameRate = editFrameRate.value;
     const cursorTicks = baseXToTick(cursorBaseX, tpqn.value);
@@ -1001,6 +1014,8 @@ const startPreview = (event: MouseEvent, mode: PreviewMode, note?: Note) => {
     } else {
       throw new Error("Unknown preview mode.");
     }
+    prevCursorFrame = cursorFrame;
+    prevCursorVolume = cursorFrequency;
   } else {
     throw new ExhaustiveError(editTarget.value);
   }
