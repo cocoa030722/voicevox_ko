@@ -739,11 +739,9 @@ const previewDrawVolume = () => {
   }
   const frameRate = editFrameRate.value;
   const cursorBaseX = (scrollX.value + cursorX.value) / zoomX.value;
-  const cursorBaseY = (scrollY.value + cursorY.value) / zoomY.value;
   const cursorTicks = baseXToTick(cursorBaseX, tpqn.value);
   const cursorSeconds = tickToSecond(cursorTicks, tempos.value, tpqn.value);
   const cursorFrame = Math.round(cursorSeconds * frameRate);
-  //const cursorNoteNumber = baseYToNoteNumber(cursorBaseY, false);
   const cursorDecibel = viewYToDecibel(cursorY.value);
   const cursorVolume = decibelToLinear(cursorDecibel);
   if (cursorFrame < 0) {
@@ -1097,10 +1095,6 @@ const endPreview = () => {
       if (previewVolumeEdit.value.data.length >= 2) {
         // 平滑化を行う
         let data = previewVolumeEdit.value.data;
-        data = data.map((value) => Math.log(value));
-        applyGaussianFilter(data, 0.7);
-        data = data.map((value) => Math.exp(value));
-
         store.dispatch("COMMAND_SET_VOLUME_EDIT_DATA", {
           volumeArray: data,
           startFrame: previewVolumeEdit.value.startFrame,

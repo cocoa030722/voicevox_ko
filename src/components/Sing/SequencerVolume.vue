@@ -9,11 +9,13 @@ import AsyncLock from "async-lock";
 import { useStore } from "@/store";
 import {
   VALUE_INDICATING_NO_DATA,
-  convertToFramePhonemes,
   linearToDecibel,
   secondToTick,
 } from "@/sing/domain";
 import {
+  DECIBEL_VIEW_OFFSET,
+  PIXELS_PER_DECIBEL,
+  decibelToViewY,
   VolumeData,
   VolumeDataHash,
   calculateVolumeDataHash,
@@ -105,9 +107,7 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
   const tpqn = store.state.tpqn;
   const canvasWidthValue = canvasWidth;
   const zoomX = store.state.sequencerZoomX;
-  const zoomY = store.state.sequencerZoomY;
   const offsetX = props.offsetX;
-  const offsetY = props.offsetY;
 
   const removedLineStrips: LineStrip[] = [];
 
@@ -179,7 +179,7 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
         continue;
       }
       const db = linearToDecibel(linear);
-      const y = db * -10 * zoomY + 250;//- ;
+      const y = decibelToViewY(db);//- ;
       lineStrip.setPoint(i, x, y);
     }
     lineStrip.update();
