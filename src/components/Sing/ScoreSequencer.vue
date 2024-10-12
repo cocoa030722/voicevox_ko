@@ -74,7 +74,7 @@
     </div>
     <SequencerPitch
       v-if="editTarget === 'PITCH'"
-      class="sequencer-curve"
+      class="sequencer-pitch"
       :style="{
         marginRight: `${scrollBarWidth}px`,
         marginBottom: `${scrollBarWidth}px`,
@@ -85,7 +85,7 @@
     />
     <SequencerVolume
       v-if="editTarget === 'VOLUME'"
-      class="sequencer-curve"
+      class="sequencer-volume"
       :style="{
         marginRight: `${scrollBarWidth}px`,
         marginBottom: `${scrollBarWidth}px`,
@@ -801,7 +801,7 @@ const previewDrawVolume = () => {
 
   previewVolumeEdit.value = tempVolumeEdit;
   prevCursorFrame = cursorFrame;
-  prevCursorVolume = cursorFrequency;
+  prevCursorVolume = cursorVolume;
 };
 
 const previewEraseVolume = () => {
@@ -1771,7 +1771,7 @@ const contextMenuData = computed<ContextMenuItemData[]>(() => {
   pointer-events: none;
 }
 
-.sequencer-curve {
+.sequencer-volume,.sequencer-pitch {
   grid-row: 2;
   grid-column: 2;
 }

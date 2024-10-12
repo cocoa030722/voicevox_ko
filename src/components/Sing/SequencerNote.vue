@@ -6,7 +6,7 @@
       'preview-lyric': previewLyric != undefined,
       overlapping: hasOverlappingError,
       'invalid-phrase': hasPhraseError,
-      'below-pitch': editTargetIsPitch || editTargetIsVolume,
+      'below-pitch-or-volume': editTargetIsPitch || editTargetIsVolume,
     }"
     :style="{
       width: `${width}px`,
@@ -226,14 +226,14 @@ const onLeftEdgeMouseDown = (event: MouseEvent) => {
   top: 0;
   left: 0;
 
-  &.below-pitch {
+  &.below-pitch-or-volume {
     .note-bar {
       background-color: rgba(colors.$primary-rgb, 0.18);
       border-color: hsl(130, 35%, 78%);
     }
   }
 
-  &:not(.below-pitch) {
+  &:not(.below-pitch-or-volume) {
     .note-left-edge:hover {
       // FIXME: hoverだとカーソル位置によって適用されないので、プレビュー中に明示的にクラス指定する
       background-color: lab(80 -22.953 14.365);
@@ -265,7 +265,7 @@ const onLeftEdgeMouseDown = (event: MouseEvent) => {
       opacity: 0.38;
     }
 
-    &.below-pitch {
+    &.below-pitch-or-volume {
       .note-bar {
         background-color: rgba(hsl(130, 100%, 50%), 0.18);
       }

@@ -8,7 +8,6 @@ import * as PIXI from "pixi.js";
 import AsyncLock from "async-lock";
 import { useStore } from "@/store";
 import {
-  UNVOICED_PHONEMES,
   VALUE_INDICATING_NO_DATA,
   convertToFramePhonemes,
   linearToDecibel,
@@ -18,7 +17,6 @@ import {
   VolumeData,
   VolumeDataHash,
   calculateVolumeDataHash,
-  getKeyBaseHeight,
   tickToBaseX,
 } from "@/sing/viewHelper";
 import { Color, LineStrip } from "@/sing/graphics/lineStrip";
@@ -277,12 +275,6 @@ const generateOriginalVolumeData = () => {
       throw new Error("phonemes.length is 0.");
     }
     const volume = singingGuide.query.volume;
-
-    // 各フレームの音素の配列を生成する
-    const framePhonemes = convertToFramePhonemes(phonemes);
-    if (volume.length !== framePhonemes.length) {
-      throw new Error("volume.length and framePhonemes.length do not match.");
-    }
 
     // 歌い方の開始フレームと終了フレームを計算する
     const singingGuideFrameLength = volume.length;
