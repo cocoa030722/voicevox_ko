@@ -198,7 +198,6 @@ import {
   noteNumberToBaseY,
   baseYToNoteNumber,
   viewYToDecibel,
-  decibelToViewY,
   keyInfos,
   getDoremiFromNoteNumber,
   ZOOM_X_MIN,
@@ -429,14 +428,10 @@ const previewVolumeEdit = ref<
   | { type: "erase"; startFrame: number; frameLength: number }
   | undefined
 >(undefined);
- // 前のカーソル位置
-// const prevCursorPos = ref<
-//   | { prevCursorFrame: number, prevCursorFrequency: number,prevCursorVolume: number }
-//   | undefined
-// >(undefined);
-let prevCursorFrame: number = 0;
-let prevCursorFrequency: number = 0;
-let prevCursorVolume: number = 0;
+// 前のカーソル位置
+let prevCursorFrame = 0;
+let prevCursorFrequency = 0;
+let prevCursorVolume = 0;
 
 // 歌詞を編集中のノート
 const editingLyricNote = computed(() => {
@@ -728,7 +723,6 @@ const previewErasePitch = () => {
   prevCursorFrame = cursorFrame;
 };
 
-
 // ボリュームを描く処理を行う
 const previewDrawVolume = () => {
   if (previewVolumeEdit.value == undefined) {
@@ -757,7 +751,7 @@ const previewDrawVolume = () => {
     tempVolumeEdit.data = new Array(numOfFramesToUnshift)
       .fill(0)
       .concat(tempVolumeEdit.data);
-      tempVolumeEdit.startFrame = cursorFrame;
+    tempVolumeEdit.startFrame = cursorFrame;
   }
 
   const lastFrame = tempVolumeEdit.startFrame + tempVolumeEdit.data.length - 1;
@@ -1094,7 +1088,7 @@ const endPreview = () => {
       // 1フレームの変更はピッチ編集ラインとして表示されないので、無視する
       if (previewVolumeEdit.value.data.length >= 2) {
         // 平滑化を行う
-        let data = previewVolumeEdit.value.data;
+        const data = [...previewVolumeEdit.value.data];
         store.dispatch("COMMAND_SET_VOLUME_EDIT_DATA", {
           volumeArray: data,
           startFrame: previewVolumeEdit.value.startFrame,
@@ -1765,7 +1759,7 @@ const contextMenuData = computed<ContextMenuItemData[]>(() => {
   pointer-events: none;
 }
 
-.sequencer-volume,.sequencer-pitch {
+.sequencer-volume .sequencer-pitch {
   grid-row: 2;
   grid-column: 2;
 }

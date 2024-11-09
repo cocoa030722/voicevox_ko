@@ -38,7 +38,9 @@
     </template>
     <template #VOLUME>
       <QTooltip :delay="500" anchor="bottom middle"
-        >ボリューム倍率編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去</QTooltip
+        >ボリューム倍率編集<br />{{
+          !isMac ? "Ctrl" : "Cmd"
+        }}+クリックで消去</QTooltip
       >
     </template>
   </QBtnToggle>

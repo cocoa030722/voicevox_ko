@@ -530,7 +530,6 @@ export function applyVolumeEdit(
       "The frame rate between the singing guide and the edit data does not match.",
     );
   }
-  const unvoicedPhonemes = UNVOICED_PHONEMES;
   const volume = singingGuide.query.volume;
   const phonemes = singingGuide.query.phonemes;
 
@@ -551,7 +550,6 @@ export function applyVolumeEdit(
   const startFrame = Math.max(0, singingGuideStartFrame);
   const endFrame = Math.min(volumeEditData.length, singingGuideEndFrame);
   for (let i = startFrame; i < endFrame; i++) {
-    const phoneme = framePhonemes[i - singingGuideStartFrame];
     if (volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
       volume[i - singingGuideStartFrame] = volumeEditData[i];
     }

@@ -13,8 +13,6 @@ import {
   secondToTick,
 } from "@/sing/domain";
 import {
-  DECIBEL_VIEW_OFFSET,
-  PIXELS_PER_DECIBEL,
   decibelToViewY,
   VolumeData,
   VolumeDataHash,
@@ -40,7 +38,6 @@ type VolumeLine = {
 
 const props = defineProps<{
   offsetX: number;
-  offsetY: number;
   previewVolumeEdit?:
     | { type: "draw"; data: number[]; startFrame: number }
     | { type: "erase"; startFrame: number; frameLength: number };
@@ -111,7 +108,7 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
 
   const removedLineStrips: LineStrip[] = [];
 
-  // 無くなったピッチデータを調べて、そのピッチデータに対応するLineStripを削除する
+  // 無くなったボリュームデータを調べて、そのボリュームデータに対応するLineStripを削除する
   for (const [key, lineStrip] of volumeLine.lineStripMap) {
     if (!volumeLine.volumeDataMap.has(key)) {
       stage.removeChild(lineStrip.displayObject);
@@ -120,7 +117,7 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
     }
   }
 
-  // ピッチデータに対応するLineStripが無かったら作成する
+  // ボリュームデータに対応するLineStripが無かったら作成する
   for (const [key, volumeData] of volumeLine.volumeDataMap) {
     if (volumeLine.lineStripMap.has(key)) {
       continue;
@@ -175,11 +172,8 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
       const baseX = tickToBaseX(ticks, tpqn);
       const x = baseX * zoomX - offsetX;
       const linear = volumeData.data[i];
-      if(Number.isNaN(linear)||linear === undefined){
-        continue;
-      }
       const db = linearToDecibel(linear);
-      const y = decibelToViewY(db);//- ;
+      const y = decibelToViewY(db);
       lineStrip.setPoint(i, x, y);
     }
     lineStrip.update();
@@ -194,7 +188,7 @@ const render = () => {
     throw new Error("stage is undefined.");
   }
 
-  // シンガーが未設定の場合はピッチラインをすべて非表示にして終了
+  // シンガーが未設定の場合はボリュームラインをすべて非表示にして終了
   const singer = store.getters.SELECTED_TRACK.singer;
   if (!singer) {
     for (const lineStrip of originalVolumeLine.lineStripMap.values()) {
@@ -207,14 +201,17 @@ const render = () => {
     return;
   }
 
-  // ピッチラインのLineStripを更新する
+  // ボリュームラインのLineStripを更新する
   updateLineStrips(originalVolumeLine);
   updateLineStrips(volumeEditLine);
 
   renderer.render(stage);
 };
 
-const toVolumeData = (framewiseData: number[], frameRate: number): VolumeData => {
+const toVolumeData = (
+  framewiseData: number[],
+  frameRate: number,
+): VolumeData => {
   const data = framewiseData;
   const ticksArray: number[] = [];
   for (let i = 0; i < data.length; i++) {
@@ -259,9 +256,9 @@ const setVolumeDataToVolumeLine = async (
 
 const generateOriginalVolumeData = () => {
   //const unvoicedPhonemes = UNVOICED_PHONEMES;
-  const frameRate = editFrameRate.value; // f0（元のピッチ）は編集フレームレートで表示する
+  const frameRate = editFrameRate.value; // volumeは編集フレームレートで表示する
 
-  // 選択中のトラックで使われている歌い方のf0を結合してピッチデータを生成する
+  // 選択中のトラックで使われている歌い方のvolumeを結合してボリュームデータを生成する
   const tempData = [];
   for (const singingGuide of singingGuidesInSelectedTrack.value) {
     // TODO: 補間を行うようにする
@@ -305,7 +302,7 @@ const generateVolumeEditData = () => {
   const frameRate = editFrameRate.value;
 
   const tempData = [...volumeEditData.value];
-  // プレビュー中のピッチ編集があれば、適用する
+  // プレビュー中のボリューム編集があれば、適用する
   if (previewVolumeEdit.value != undefined) {
     const previewVolumeEditType = previewVolumeEdit.value.type;
     if (previewVolumeEditType === "draw") {
@@ -380,12 +377,7 @@ watch(
 );
 
 watch(
-  () => [
-    store.state.sequencerZoomX,
-    store.state.sequencerZoomY,
-    props.offsetX,
-    props.offsetY,
-  ],
+  () => [store.state.sequencerZoomX, store.state.sequencerZoomY, props.offsetX],
   () => {
     renderInNextFrame = true;
   },
@@ -415,7 +407,7 @@ onMountedOrActivated(() => {
   stage = new PIXI.Container();
 
   // webGLVersionをチェックする
-  // 2未満の場合、ピッチの表示ができないのでエラーとしてロギングする
+  // 2未満の場合、ボリュームの表示ができないのでエラーとしてロギングする
   const webGLVersion = renderer.context.webGLVersion;
   if (webGLVersion < 2) {
     error(`webGLVersion is less than 2. webGLVersion: ${webGLVersion}`);

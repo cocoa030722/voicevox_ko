@@ -770,7 +770,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
         throw new Error("startFrame must be greater than or equal to 0.");
       }
       if (!isValidVolumeEditData(volumeArray)) {
-        throw new Error("The pitch edit data is invalid.");
+        throw new Error("The volume edit data is invalid.");
       }
       commit("SET_VOLUME_EDIT_DATA", { volumeArray, startFrame, trackId });
 
@@ -790,10 +790,10 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
   },
 
   CLEAR_VOLUME_EDIT_DATA: {
-    // ピッチ編集データを失くす。
+    // ボリューム編集データを失くす。
     mutation(state, { trackId }) {
       const track = getOrThrow(state.tracks, trackId);
-      track.pitchEditData = [];
+      track.volumeEditData = [];
     },
     async action({ dispatch, commit }, { trackId }) {
       commit("CLEAR_VOLUME_EDIT_DATA", { trackId });
@@ -1684,10 +1684,14 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
                 phrase.singingGuideKey,
               );
 
-              // 歌い方をコピーして、ピッチ編集を適用する
+              // 歌い方をコピーして、ピッチ、ボリューム編集編集を適用する
               singingGuide = structuredClone(toRaw(singingGuide));
               applyPitchEdit(singingGuide, track.pitchEditData, editFrameRate);
-              applyVolumeEdit(singingGuide, track.volumeEditData, editFrameRate);
+              applyVolumeEdit(
+                singingGuide,
+                track.volumeEditData,
+                editFrameRate,
+              );
 
               const calculatedHash = await calculateSingingVoiceSourceHash({
                 singer: singerAndFrameRate.singer,
@@ -1898,6 +1902,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
 
             // ピッチ編集を適用する
             applyPitchEdit(singingGuide, track.pitchEditData, editFrameRate);
+            applyVolumeEdit(singingGuide, track.volumeEditData, editFrameRate);
 
             // 歌声のキャッシュがあれば取得し、なければ音声合成を行う
 
