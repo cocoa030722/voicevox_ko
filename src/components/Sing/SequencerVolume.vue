@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, Ref } from "vue";
 import * as PIXI from "pixi.js";
 import AsyncLock from "async-lock";
 import { useStore } from "@/store";
@@ -28,9 +28,10 @@ import { ExhaustiveError } from "@/type/utility";
 import { createLogger } from "@/domain/frontend/log";
 import { getLast } from "@/sing/utility";
 import { getOrThrow } from "@/helpers/mapHelper";
+import { EditorFrameAudioQuery } from "@/store/type";
 
 type VolumeLine = {
-  readonly color: Color;
+  color: Ref<Color>;
   readonly width: number;
   readonly volumeDataMap: Map<VolumeDataHash, VolumeData>;
   readonly lineStripMap: Map<VolumeDataHash, LineStrip>;
@@ -46,39 +47,54 @@ const props = defineProps<{
 const { warn, error } = createLogger("SequencerVolume");
 const store = useStore();
 const tpqn = computed(() => store.state.tpqn);
+const isDark = computed(() => store.state.currentTheme === "Dark");
 const tempos = computed(() => [store.state.tempos[0]]);
 const volumeEditData = computed(() => {
   return store.getters.SELECTED_TRACK.volumeEditData;
 });
 const previewVolumeEdit = computed(() => props.previewVolumeEdit);
 const selectedTrackId = computed(() => store.getters.SELECTED_TRACK_ID);
-const editFrameRate = computed(() => store.state.editFrameRate);
+const editorFrameRate = computed(() => store.state.editorFrameRate);
 const singingGuidesInSelectedTrack = computed(() => {
-  const singingGuides = [];
+  const singingGuides: {
+    query: EditorFrameAudioQuery;
+    startTime: number;
+  }[] = [];
   for (const phrase of store.state.phrases.values()) {
     if (phrase.trackId !== selectedTrackId.value) {
       continue;
     }
-    if (phrase.singingGuideKey == undefined) {
+    if (phrase.queryKey == undefined) {
       continue;
     }
-    const singingGuide = getOrThrow(
-      store.state.singingGuides,
-      phrase.singingGuideKey,
-    );
-    singingGuides.push(singingGuide);
+    const phraseQuery = getOrThrow(store.state.phraseQueries, phrase.queryKey);
+    singingGuides.push({
+      startTime: phrase.startTime,
+      query: phraseQuery,
+    });
   }
   return singingGuides;
 });
-
+// NOTE: ボリュームラインの色をテーマに応じて調節する
+// 動的カラースキーマに対応後、テーマに応じた色をオブジェクトから取得できるようにする
+const originalVolumeLineColorLight = new Color(184, 212, 127, 255);
+const originalVolumeLineColorDark = new Color(184, 212, 127, 255);
+const originalVolumeLineColor = ref(
+  isDark.value ? originalVolumeLineColorDark : originalVolumeLineColorLight,
+);
 const originalVolumeLine: VolumeLine = {
-  color: new Color(184, 212, 127, 255),
+  color: originalVolumeLineColor,
   width: 1.2,
   volumeDataMap: new Map(),
   lineStripMap: new Map(),
 };
+const volumeEditLineColorLight = new Color(161, 224, 31, 255);
+const volumeEditLineColorDark = new Color(161, 224, 31, 255);
+const volumeEditLineColor = ref(
+  isDark.value ? volumeEditLineColorLight : volumeEditLineColorDark,
+);
 const volumeEditLine: VolumeLine = {
-  color: new Color(161, 224, 31, 255),
+  color: volumeEditLineColor,
   width: 2,
   volumeDataMap: new Map(),
   lineStripMap: new Map(),
@@ -128,16 +144,27 @@ const updateLineStrips = (volumeLine: VolumeLine) => {
     let lineStrip = removedLineStrips.pop();
     if (lineStrip != undefined) {
       if (
-        !lineStrip.color.equals(volumeLine.color) ||
+        !lineStrip.color.equals(volumeLine.color.value) ||
         lineStrip.width !== volumeLine.width
       ) {
         throw new Error("Color or width does not match.");
       }
       lineStrip.numOfPoints = dataLength;
     } else {
-      lineStrip = new LineStrip(dataLength, volumeLine.color, volumeLine.width);
+      lineStrip = new LineStrip(
+        dataLength,
+        volumeLine.color.value,
+        volumeLine.width,
+      );
     }
     stage.addChild(lineStrip.displayObject);
+    // volumeEditLineの場合は最後に追加する（originalより前面に表示）
+    if (volumeLine === volumeEditLine) {
+      stage.addChild(lineStrip.displayObject);
+    } else {
+      // originalLineは最初に追加する（EditLineの背面に表示）
+      stage.addChildAt(lineStrip.displayObject, 0);
+    }
     volumeLine.lineStripMap.set(key, lineStrip);
   }
 
@@ -255,14 +282,13 @@ const setVolumeDataToVolumeLine = async (
 };
 
 const generateOriginalVolumeData = () => {
-  //const unvoicedPhonemes = UNVOICED_PHONEMES;
-  const frameRate = editFrameRate.value; // volumeは編集フレームレートで表示する
+  const frameRate = editorFrameRate.value; // volumeは編集フレームレートで表示する
 
   // 選択中のトラックで使われている歌い方のvolumeを結合してボリュームデータを生成する
   const tempData = [];
   for (const singingGuide of singingGuidesInSelectedTrack.value) {
     // TODO: 補間を行うようにする
-    if (singingGuide.frameRate !== frameRate) {
+    if (singingGuide.query.frameRate !== frameRate) {
       throw new Error(
         "The frame rate between the singing guide and the edit does not match.",
       );
@@ -299,7 +325,7 @@ const generateOriginalVolumeData = () => {
 };
 
 const generateVolumeEditData = () => {
-  const frameRate = editFrameRate.value;
+  const frameRate = editorFrameRate.value;
 
   const tempData = [...volumeEditData.value];
   // プレビュー中のボリューム編集があれば、適用する

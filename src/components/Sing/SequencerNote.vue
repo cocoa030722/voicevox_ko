@@ -177,12 +177,14 @@ const classes = computed(() => {
   return {
     "edit-note": editTargetIsNote.value, // ノート編集モード
     "edit-pitch": editTargetIsPitch.value, // ピッチ編集モード
+    "edit-volume": editTargetIsVolume.value, // ボリューム編集モード
     selected: props.isSelected, // このノートが選択中
     preview: props.isPreview, // なんらかのプレビュー中
     "preview-lyric": props.previewLyric != undefined, // 歌詞プレビュー中
     overlapping: hasOverlappingError.value, // ノートが重なっている
     "invalid-phrase": hasPhraseError.value, // フレーズ生成エラー
     "below-pitch": editTargetIsPitch.value, // ピッチ編集中
+    "below-volume": editTargetIsVolume.value, // ボリューム編集中
     adding: props.isPreview && props.previewMode === "ADD_NOTE", // ノート追加中
     "resizing-right":
       props.isPreview && props.previewMode === "RESIZE_NOTE_RIGHT", // 右リサイズ中
@@ -449,7 +451,7 @@ const onLeftEdgeMouseDown = (event: MouseEvent) => {
 }
 
 /* ピッチ編集モード */
-.note.edit-pitch {
+.note.edit-pitch.edit-volume {
   // ノートバー
   .note-bar {
     background-color: var(--scheme-color-sing-note-bar-below-pitch-container);
@@ -526,7 +528,7 @@ const onLeftEdgeMouseDown = (event: MouseEvent) => {
 }
 
 // ピッチ編集モード
-.note-lyric.edit-pitch {
+.note-lyric.edit-pitch.edit-volume {
   color: oklch(from var(--scheme-color-on-surface-variant) l c h / 0.8);
   z-index: vars.$z-index-sing-note-lyric;
   @include text-outline(var(--scheme-color-surface-variant));

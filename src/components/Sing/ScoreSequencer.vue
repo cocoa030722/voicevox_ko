@@ -10,6 +10,7 @@
     <div ref="sequencerBody" class="sequencer-body" :class="{
       'edit-note': editTarget === 'NOTE',
       'edit-pitch': editTarget === 'PITCH',
+      'edit-volume': editTarget === 'VOLUME',
       previewing: nowPreviewing,
       [cursorClass]: true,
     }" aria-label="シーケンサ" @mousedown="onMouseDown" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
@@ -727,7 +728,8 @@ const previewDrawVolume = () => {
   prevCursorPos.frame = cursorFrame;
   prevCursorPos.volume = cursorVolume;
   setCursorState(CursorState.DRAW);
-}
+};
+
 const previewEraseVolume = () => {
   if (previewVolumeEdit.value == undefined) {
     throw new Error("previewVolumeEdit.value is undefined.");
@@ -735,7 +737,7 @@ const previewEraseVolume = () => {
   if (previewVolumeEdit.value.type !== "erase") {
     throw new Error("previewVolumeEdit.value.type is not erase.");
   }
-  const frameRate = editorFrameRate.value;;
+  const frameRate = editorFrameRate.value;
   const cursorBaseX = (scrollX.value + cursorX.value) / zoomX.value;
   const cursorTicks = baseXToTick(cursorBaseX, tpqn.value);
   const cursorSeconds = tickToSecond(cursorTicks, tempos.value, tpqn.value);

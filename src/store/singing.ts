@@ -1225,7 +1225,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
       const tempData = [...volumeEditData];
       const endFrame = startFrame + volumeArray.length;
       if (tempData.length < endFrame) {
-        const valuesToPush = new Array(endFrame - tempData.length).fill(
+        const valuesToPush = new Array<number>(endFrame - tempData.length).fill(
           VALUE_INDICATING_NO_DATA,
         );
         tempData.push(...valuesToPush);
@@ -2114,6 +2114,12 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
           track.pitchEditData,
           context.snapshot.editorFrameRate,
         );
+        applyVolumeEdit(
+          clonedQuery,
+          phrase.startTime,
+          track.pitchEditData,
+          context.snapshot.editorFrameRate,
+        );
         return {
           engineId: track.singer.engineId,
           engineFrameRate: query.frameRate,
@@ -2253,6 +2259,12 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
         const clonedQuery = cloneWithUnwrapProxy(query);
         const clonedSingingVolume = cloneWithUnwrapProxy(singingVolume);
         applyPitchEdit(
+          clonedQuery,
+          phrase.startTime,
+          track.pitchEditData,
+          context.snapshot.editorFrameRate,
+        );
+        applyVolumeEdit(
           clonedQuery,
           phrase.startTime,
           track.pitchEditData,
@@ -3478,20 +3490,20 @@ export const singingCommandStore = transformCommandStore(
           trackId,
         });
       },
-      action({ commit, dispatch }, { volumeArray, startFrame, trackId }) {
+      action({ mutations, actions }, { volumeArray, startFrame, trackId }) {
         if (startFrame < 0) {
           throw new Error("startFrame must be greater than or equal to 0.");
         }
         if (!isValidVolumeEditData(volumeArray)) {
           throw new Error("The volume edit data is invalid.");
         }
-        commit("COMMAND_SET_VOLUME_EDIT_DATA", {
+        mutations.COMMAND_SET_VOLUME_EDIT_DATA({
           volumeArray,
           startFrame,
           trackId,
         });
 
-        dispatch("RENDER");
+        void actions.RENDER();
       },
     },
     COMMAND_ERASE_VOLUME_EDIT_DATA: {
