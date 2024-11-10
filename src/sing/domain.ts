@@ -4,18 +4,20 @@ import {
   Note,
   Phrase,
   PhraseSource,
-  SingingGuide,
-  SingingGuideSource,
-  SingingVoiceSource,
   Tempo,
   TimeSignature,
-  phraseSourceHashSchema,
+  PhraseKey,
   Track,
-  singingGuideSourceHashSchema,
-  singingVoiceSourceHashSchema,
+  EditorFrameAudioQuery,
 } from "@/store/type";
 import { FramePhoneme } from "@/openapi";
 import { TrackId } from "@/type/preload";
+
+// TODO: 後でdomain/type.tsに移す
+export type MeasuresBeats = {
+  measures: number;
+  beats: number;
+};
 
 const BEAT_TYPES = [2, 4, 8, 16];
 const MIN_BPM = 40;
@@ -27,7 +29,7 @@ export const isTracksEmpty = (tracks: Track[]) =>
 export const isValidTpqn = (tpqn: number) => {
   return (
     Number.isInteger(tpqn) &&
-    BEAT_TYPES.every((value) => tpqn % value === 0) &&
+    BEAT_TYPES.every((value) => (tpqn * 4) % value === 0) &&
     tpqn % 3 === 0
   );
 };
@@ -214,9 +216,45 @@ export function getMeasureDuration(
   beatType: number,
   tpqn: number,
 ) {
-  const wholeNoteDuration = tpqn * 4;
-  return (wholeNoteDuration / beatType) * beats;
+  return ((tpqn * 4) / beatType) * beats;
 }
+
+// NOTE: 戻り値の単位はtick
+export function getBeatDuration(beatType: number, tpqn: number) {
+  return (tpqn * 4) / beatType;
+}
+
+export const ticksToMeasuresBeats = (
+  ticks: number,
+  timeSignatures: (TimeSignature & { position: number })[],
+  tpqn: number,
+): MeasuresBeats => {
+  let tsIndex = 0;
+  if (ticks >= 0) {
+    for (let i = 0; i < timeSignatures.length; i++) {
+      if (
+        i === timeSignatures.length - 1 ||
+        timeSignatures[i + 1].position > ticks
+      ) {
+        tsIndex = i;
+        break;
+      }
+    }
+  }
+  const ts = timeSignatures[tsIndex];
+
+  const measureDuration = getMeasureDuration(ts.beats, ts.beatType, tpqn);
+  const beatDuration = getBeatDuration(ts.beatType, tpqn);
+
+  const posInTs = ticks - ts.position;
+  const measuresInTs = Math.floor(posInTs / measureDuration);
+  const measures = ts.measureNumber + measuresInTs;
+
+  const posInMeasure = posInTs - measureDuration * measuresInTs;
+  const beats = 1 + posInMeasure / beatDuration;
+
+  return { measures, beats };
+};
 
 export function getNumMeasures(
   notes: Note[],
@@ -297,7 +335,7 @@ export const DEFAULT_BEAT_TYPE = 4;
 export const SEQUENCER_MIN_NUM_MEASURES = 32;
 
 // マルチエンジン対応のために将来的に廃止予定で、利用は非推奨
-export const DEPRECATED_DEFAULT_EDIT_FRAME_RATE = 93.75;
+export const DEPRECATED_DEFAULT_EDITOR_FRAME_RATE = 93.75;
 
 export const VALUE_INDICATING_NO_DATA = -1;
 
@@ -388,23 +426,9 @@ export function isValidVolumeEditData(volumeEditData: number[]) {
   );
 }
 
-export const calculatePhraseSourceHash = async (phraseSource: PhraseSource) => {
+export const calculatePhraseKey = async (phraseSource: PhraseSource) => {
   const hash = await calculateHash(phraseSource);
-  return phraseSourceHashSchema.parse(hash);
-};
-
-export const calculateSingingGuideSourceHash = async (
-  singingGuideSource: SingingGuideSource,
-) => {
-  const hash = await calculateHash(singingGuideSource);
-  return singingGuideSourceHashSchema.parse(hash);
-};
-
-export const calculateSingingVoiceSourceHash = async (
-  singingVoiceSource: SingingVoiceSource,
-) => {
-  const hash = await calculateHash(singingVoiceSource);
-  return singingVoiceSourceHashSchema.parse(hash);
+  return PhraseKey(hash);
 };
 
 export function getStartTicksOfPhrase(phrase: Phrase) {
@@ -478,20 +502,21 @@ export function convertToFramePhonemes(phonemes: FramePhoneme[]) {
 }
 
 export function applyPitchEdit(
-  singingGuide: SingingGuide,
+  phraseQuery: EditorFrameAudioQuery,
+  phraseStartTime: number,
   pitchEditData: number[],
-  editFrameRate: number,
+  editorFrameRate: number,
 ) {
-  // 歌い方のフレームレートと編集フレームレートが一致しない場合はエラー
+  // フレーズのクエリのフレームレートとエディターのフレームレートが一致しない場合はエラー
   // TODO: 補間するようにする
-  if (singingGuide.frameRate !== editFrameRate) {
+  if (phraseQuery.frameRate !== editorFrameRate) {
     throw new Error(
-      "The frame rate between the singing guide and the edit data does not match.",
+      "The frame rate between the phrase query and the editor does not match.",
     );
   }
   const unvoicedPhonemes = UNVOICED_PHONEMES;
-  const f0 = singingGuide.query.f0;
-  const phonemes = singingGuide.query.phonemes;
+  const f0 = phraseQuery.f0;
+  const phonemes = phraseQuery.phonemes;
 
   // 各フレームの音素の配列を生成する
   const framePhonemes = convertToFramePhonemes(phonemes);
@@ -499,39 +524,40 @@ export function applyPitchEdit(
     throw new Error("f0.length and framePhonemes.length do not match.");
   }
 
-  // 歌い方の開始フレームと終了フレームを計算する
-  const singingGuideFrameLength = f0.length;
-  const singingGuideStartFrame = Math.round(
-    singingGuide.startTime * singingGuide.frameRate,
+  // フレーズのクエリの開始フレームと終了フレームを計算する
+  const phraseQueryFrameLength = f0.length;
+  const phraseQueryStartFrame = Math.round(
+    phraseStartTime * phraseQuery.frameRate,
   );
-  const singingGuideEndFrame = singingGuideStartFrame + singingGuideFrameLength;
+  const phraseQueryEndFrame = phraseQueryStartFrame + phraseQueryFrameLength;
 
   // ピッチ編集をf0に適用する
-  const startFrame = Math.max(0, singingGuideStartFrame);
-  const endFrame = Math.min(pitchEditData.length, singingGuideEndFrame);
+  const startFrame = Math.max(0, phraseQueryStartFrame);
+  const endFrame = Math.min(pitchEditData.length, phraseQueryEndFrame);
   for (let i = startFrame; i < endFrame; i++) {
-    const phoneme = framePhonemes[i - singingGuideStartFrame];
+    const phoneme = framePhonemes[i - phraseQueryStartFrame];
     const voiced = !unvoicedPhonemes.includes(phoneme);
     if (voiced && pitchEditData[i] !== VALUE_INDICATING_NO_DATA) {
-      f0[i - singingGuideStartFrame] = pitchEditData[i];
+      f0[i - phraseQueryStartFrame] = pitchEditData[i];
     }
   }
 }
 
 export function applyVolumeEdit(
-  singingGuide: SingingGuide,
+  phraseQuery: EditorFrameAudioQuery,
+  phraseStartTime: number,
   volumeEditData: number[],
-  editFrameRate: number,
+  editorFrameRate: number,
 ) {
-  // 歌い方のフレームレートと編集フレームレートが一致しない場合はエラー
+  // フレーズのクエリのフレームレートとエディターのフレームレートが一致しない場合はエラー
   // TODO: 補間するようにする
-  if (singingGuide.frameRate !== editFrameRate) {
+  if (phraseQuery.frameRate !== editorFrameRate) {
     throw new Error(
-      "The frame rate between the singing guide and the edit data does not match.",
+      "The frame rate between the phrase query and the editor does not match.",
     );
   }
-  const volume = singingGuide.query.volume;
-  const phonemes = singingGuide.query.phonemes;
+  const volume = phraseQuery.volume;
+  const phonemes = phraseQuery.phonemes;
 
   // 各フレームの音素の配列を生成する
   const framePhonemes = convertToFramePhonemes(phonemes);
@@ -540,18 +566,18 @@ export function applyVolumeEdit(
   }
 
   // 歌い方の開始フレームと終了フレームを計算する
-  const singingGuideFrameLength = volume.length;
-  const singingGuideStartFrame = Math.round(
-    singingGuide.startTime * singingGuide.frameRate,
+  const phraseQueryFrameLength = volume.length;
+  const phraseQueryStartFrame = Math.round(
+    phraseStartTime * phraseQuery.frameRate,
   );
-  const singingGuideEndFrame = singingGuideStartFrame + singingGuideFrameLength;
+  const phraseQueryEndFrame = phraseQueryStartFrame + phraseQueryFrameLength;
 
   // ピッチ編集をf0に適用する
-  const startFrame = Math.max(0, singingGuideStartFrame);
-  const endFrame = Math.min(volumeEditData.length, singingGuideEndFrame);
+  const startFrame = Math.max(0, phraseQueryStartFrame);
+  const endFrame = Math.min(volumeEditData.length, phraseQueryEndFrame);
   for (let i = startFrame; i < endFrame; i++) {
     if (volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
-      volume[i - singingGuideStartFrame] = volumeEditData[i];
+      volume[i - phraseQueryStartFrame] = volumeEditData[i];
     }
   }
 }
