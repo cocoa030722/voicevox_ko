@@ -166,7 +166,9 @@ export type PreviewMode =
   | "RESIZE_NOTE_RIGHT"
   | "RESIZE_NOTE_LEFT"
   | "DRAW_PITCH"
-  | "ERASE_PITCH";
+  | "ERASE_PITCH"
+  | "DRAW_VOLUME"
+  | "ERASE_VOLUME";
 
 export function getButton(event: MouseEvent): MouseButton {
   // macOSの場合、Ctrl+クリックは右クリック
