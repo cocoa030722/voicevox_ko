@@ -2117,7 +2117,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
         applyVolumeEdit(
           clonedQuery,
           phrase.startTime,
-          track.pitchEditData,
+          track.volumeEditData,
           context.snapshot.editorFrameRate,
         );
         return {
@@ -2267,7 +2267,7 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
         applyVolumeEdit(
           clonedQuery,
           phrase.startTime,
-          track.pitchEditData,
+          track.volumeEditData,
           context.snapshot.editorFrameRate,
         );
         clonedQuery.volume = clonedSingingVolume;
@@ -3521,7 +3521,7 @@ export const singingCommandStore = transformCommandStore(
         if (frameLength < 1) {
           throw new Error("frameLength must be at least 1.");
         }
-        mutations.COMMAND_ERASE_PITCH_EDIT_DATA({
+        mutations.COMMAND_ERASE_VOLUME_EDIT_DATA({
           startFrame,
           frameLength,
           trackId,

@@ -38,7 +38,7 @@
       </QTooltip>
     </QBtn>
 
-<!-- ボリューム -->
+    <!-- ボリューム -->
     <QBtn
       dense
       unelevated
@@ -53,7 +53,7 @@
         transitionShow=""
         transitionSide=""
       >
-            ボリューム倍率編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去
+        ボリューム倍率編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去
       </QTooltip>
     </QBtn>
   </QBtnGroup>

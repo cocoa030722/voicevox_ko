@@ -280,111 +280,111 @@ const onLeftEdgeMouseDown = (event: MouseEvent) => {
   top: 0;
   left: 0;
 
---note-error-container: oklch(
-  from var(--scheme-color-error-container) l calc(var(--secondary-c) / 2) h
-);
+  --note-error-container: oklch(
+    from var(--scheme-color-error-container) l calc(var(--secondary-c) / 2) h
+  );
 
-.note-bar {
-  box-sizing: border-box;
-  position: absolute;
-  width: calc(100% + 1px);
-  height: 100%;
-  background-color: var(--scheme-color-sing-note-bar-container);
-  border: 1px solid var(--scheme-color-sing-note-bar-border);
-  border-radius: 5px;
-}
-
-.note-edge {
-  position: absolute;
-  top: 0;
-  width: 25%;
-  min-width: 3px;
-  max-width: 8px;
-  height: 100%;
-  background-color: transparent;
-  cursor: ew-resize;
-
-  &.left {
-    left: -2px; // FIXME: 左隣のノートの右端の当たり判定に食い込んでしまう
-    border-radius: 5px 0 0 5px;
-  }
-
-  &.right {
-    right: -2px; // FIXME: 右隣のノートの左端の当たり判定に食い込んでしまう
-    border-radius: 0 5px 5px 0;
-  }
-
-  &:hover {
-    background-color: var(--scheme-color-sing-note-bar-border);
-  }
-}
-}
-
-// ノート編集モード
-.note.edit-note {
-.note-bar {
-  cursor: move;
-}
-
-.note-edge {
-  cursor: ew-resize;
-
-  &:hover {
-    background-color: var(--scheme-color-sing-note-bar-border);
-  }
-}
-
-// 選択中のスタイル
-&.selected {
   .note-bar {
-    background-color: var(--scheme-color-sing-note-bar-selected-container);
-    border-color: var(--scheme-color-sing-note-bar-selected-border);
-    outline: 1px solid var(--scheme-color-sing-note-bar-selected-outline);
-    outline-offset: 1px;
-  }
-
-  .note-edge:hover {
-    background-color: var(--scheme-color-sing-note-bar-selected-border);
-  }
-}
-
-// ノート追加中
-&.adding {
-  .note-bar {
-    background-color: var(--scheme-color-sing-note-bar-selected-container);
-    border-color: var(--scheme-color-sing-note-bar-selected-border);
-    outline: 1px solid var(--scheme-color-sing-note-bar-selected-outline);
+    box-sizing: border-box;
+    position: absolute;
+    width: calc(100% + 1px);
+    height: 100%;
+    background-color: var(--scheme-color-sing-note-bar-container);
+    border: 1px solid var(--scheme-color-sing-note-bar-border);
+    border-radius: 5px;
   }
 
   .note-edge {
+    position: absolute;
+    top: 0;
+    width: 25%;
+    min-width: 3px;
+    max-width: 8px;
+    height: 100%;
+    background-color: transparent;
+    cursor: ew-resize;
+
+    &.left {
+      left: -2px; // FIXME: 左隣のノートの右端の当たり判定に食い込んでしまう
+      border-radius: 5px 0 0 5px;
+    }
+
+    &.right {
+      right: -2px; // FIXME: 右隣のノートの左端の当たり判定に食い込んでしまう
+      border-radius: 0 5px 5px 0;
+    }
+
     &:hover {
-      background-color: transparent;
+      background-color: var(--scheme-color-sing-note-bar-border);
     }
   }
 }
 
-// 右リサイズ中
-&.resizing-right {
-  .note-edge.right {
-    background-color: var(--scheme-color-sing-note-bar-selected-border);
-  }
-}
-
-// 左リサイズ中
-&.resizing-left {
-  .note-edge.left {
-    background-color: var(--scheme-color-sing-note-bar-selected-border);
-  }
-}
-
-// 歌詞プレビュー中
-&.preview-lyric {
+// ノート編集モード
+.note.edit-note {
   .note-bar {
-    background-color: var(--scheme-color-sing-note-bar-preview-container);
-    border-color: var(--scheme-color-sing-note-bar-preview-border);
-    outline-color: var(--scheme-color-sing-note-bar-preview-outline);
+    cursor: move;
   }
-}
+
+  .note-edge {
+    cursor: ew-resize;
+
+    &:hover {
+      background-color: var(--scheme-color-sing-note-bar-border);
+    }
+  }
+
+  // 選択中のスタイル
+  &.selected {
+    .note-bar {
+      background-color: var(--scheme-color-sing-note-bar-selected-container);
+      border-color: var(--scheme-color-sing-note-bar-selected-border);
+      outline: 1px solid var(--scheme-color-sing-note-bar-selected-outline);
+      outline-offset: 1px;
+    }
+
+    .note-edge:hover {
+      background-color: var(--scheme-color-sing-note-bar-selected-border);
+    }
+  }
+
+  // ノート追加中
+  &.adding {
+    .note-bar {
+      background-color: var(--scheme-color-sing-note-bar-selected-container);
+      border-color: var(--scheme-color-sing-note-bar-selected-border);
+      outline: 1px solid var(--scheme-color-sing-note-bar-selected-outline);
+    }
+
+    .note-edge {
+      &:hover {
+        background-color: transparent;
+      }
+    }
+  }
+
+  // 右リサイズ中
+  &.resizing-right {
+    .note-edge.right {
+      background-color: var(--scheme-color-sing-note-bar-selected-border);
+    }
+  }
+
+  // 左リサイズ中
+  &.resizing-left {
+    .note-edge.left {
+      background-color: var(--scheme-color-sing-note-bar-selected-border);
+    }
+  }
+
+  // 歌詞プレビュー中
+  &.preview-lyric {
+    .note-bar {
+      background-color: var(--scheme-color-sing-note-bar-preview-container);
+      border-color: var(--scheme-color-sing-note-bar-preview-border);
+      outline-color: var(--scheme-color-sing-note-bar-preview-outline);
+    }
+  }
 
   // 右リサイズ中
   &.resizing-right {

@@ -5,76 +5,170 @@
     <!-- ルーラー -->
     <SequencerRuler class="sequencer-ruler" :offset="scrollX" :numMeasures />
     <!-- 鍵盤 -->
-    <SequencerKeys class="sequencer-keys" :offset="scrollY" :blackKeyWidth="28" />
+    <SequencerKeys
+      class="sequencer-keys"
+      :offset="scrollY"
+      :blackKeyWidth="28"
+    />
     <!-- シーケンサ -->
-    <div ref="sequencerBody" class="sequencer-body" :class="{
-      'edit-note': editTarget === 'NOTE',
-      'edit-pitch': editTarget === 'PITCH',
-      'edit-volume': editTarget === 'VOLUME',
-      previewing: nowPreviewing,
-      [cursorClass]: true,
-    }" aria-label="シーケンサ" @mousedown="onMouseDown" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
-      @wheel="onWheel" @scroll="onScroll" @contextmenu.prevent>
+    <div
+      ref="sequencerBody"
+      class="sequencer-body"
+      :class="{
+        'edit-note': editTarget === 'NOTE',
+        'edit-pitch': editTarget === 'PITCH',
+        'edit-volume': editTarget === 'VOLUME',
+        previewing: nowPreviewing,
+        [cursorClass]: true,
+      }"
+      aria-label="シーケンサ"
+      @mousedown="onMouseDown"
+      @mouseenter="onMouseEnter"
+      @mouseleave="onMouseLeave"
+      @wheel="onWheel"
+      @scroll="onScroll"
+      @contextmenu.prevent
+    >
       <!-- グリッド -->
       <SequencerGrid />
-      <div v-if="editTarget === 'NOTE' && showGuideLine" class="sequencer-guideline" :style="{
-        height: `${gridHeight}px`,
-        transform: `translateX(${guideLineX}px)`,
-      }"></div>
+      <div
+        v-if="editTarget === 'NOTE' && showGuideLine"
+        class="sequencer-guideline"
+        :style="{
+          height: `${gridHeight}px`,
+          transform: `translateX(${guideLineX}px)`,
+        }"
+      ></div>
       <!-- キャラクター全身 -->
       <CharacterPortrait />
       <!-- undefinedだと警告が出るのでnullを渡す -->
       <!-- TODO: ちゃんとしたトラックIDを渡す -->
-      <SequencerShadowNote v-for="note in notesInOtherTracks" :key="note.id" :note />
-      <SequencerNote v-for="note in editTarget === 'NOTE'
-        ? notesInSelectedTrackWithPreview
-        : notesInSelectedTrack" :key="note.id" class="sequencer-note" :note :isSelected="selectedNoteIds.has(note.id)"
-        :isPreview="previewNoteIds.has(note.id)" :isOverlapping="overlappingNoteIdsInSelectedTrack.has(note.id)"
-        :previewLyric="previewLyrics.get(note.id) || null" :nowPreviewing :previewMode :cursorClass
-        @barMousedown="onNoteBarMouseDown($event, note)" @barDoubleClick="onNoteBarDoubleClick($event, note)"
+      <SequencerShadowNote
+        v-for="note in notesInOtherTracks"
+        :key="note.id"
+        :note
+      />
+      <SequencerNote
+        v-for="note in editTarget === 'NOTE'
+          ? notesInSelectedTrackWithPreview
+          : notesInSelectedTrack"
+        :key="note.id"
+        class="sequencer-note"
+        :note
+        :isSelected="selectedNoteIds.has(note.id)"
+        :isPreview="previewNoteIds.has(note.id)"
+        :isOverlapping="overlappingNoteIdsInSelectedTrack.has(note.id)"
+        :previewLyric="previewLyrics.get(note.id) || null"
+        :nowPreviewing
+        :previewMode
+        :cursorClass
+        @barMousedown="onNoteBarMouseDown($event, note)"
+        @barDoubleClick="onNoteBarDoubleClick($event, note)"
         @leftEdgeMousedown="onNoteLeftEdgeMouseDown($event, note)"
-        @rightEdgeMousedown="onNoteRightEdgeMouseDown($event, note)" />
-      <SequencerLyricInput v-if="editingLyricNote != undefined" :editingLyricNote @lyricInput="onLyricInput"
-        @lyricConfirmed="onLyricConfirmed" />
+        @rightEdgeMousedown="onNoteRightEdgeMouseDown($event, note)"
+      />
+      <SequencerLyricInput
+        v-if="editingLyricNote != undefined"
+        :editingLyricNote
+        @lyricInput="onLyricInput"
+        @lyricConfirmed="onLyricConfirmed"
+      />
     </div>
-    <SequencerPitch v-if="editTarget === 'PITCH'" class="sequencer-pitch" :style="{
-      marginRight: `${scrollBarWidth}px`,
-      marginBottom: `${scrollBarWidth}px`,
-    }" :offsetX="scrollX" :offsetY="scrollY" :previewPitchEdit />
-    <SequencerVolume v-if="editTarget === 'VOLUME'" class="sequencer-volume" :style="{
-      marginRight: `${scrollBarWidth}px`,
-      marginBottom: `${scrollBarWidth}px`,
-    }" :offsetX="scrollX" :offsetY="scrollY" :previewVolumeEdit />
-    <div class="sequencer-overlay" :style="{
-      marginRight: `${scrollBarWidth}px`,
-      marginBottom: `${scrollBarWidth}px`,
-    }">
-      <div ref="rectSelectHitbox" class="rect-select-preview" :style="{
-        display: isRectSelecting ? 'block' : 'none',
-        left: `${Math.min(rectSelectStartX, cursorX)}px`,
-        top: `${Math.min(rectSelectStartY, cursorY)}px`,
-        width: `${Math.abs(cursorX - rectSelectStartX)}px`,
-        height: `${Math.abs(cursorY - rectSelectStartY)}px`,
-      }"></div>
-      <SequencerPhraseIndicator v-for="phraseInfo in phraseInfosInOtherTracks" :key="phraseInfo.key"
-        :phraseKey="phraseInfo.key" :isInSelectedTrack="false" class="sequencer-phrase-indicator" :style="{
+    <SequencerPitch
+      v-if="editTarget === 'PITCH'"
+      class="sequencer-pitch"
+      :style="{
+        marginRight: `${scrollBarWidth}px`,
+        marginBottom: `${scrollBarWidth}px`,
+      }"
+      :offsetX="scrollX"
+      :offsetY="scrollY"
+      :previewPitchEdit
+    />
+    <SequencerVolume
+      v-if="editTarget === 'VOLUME'"
+      class="sequencer-volume"
+      :style="{
+        marginRight: `${scrollBarWidth}px`,
+        marginBottom: `${scrollBarWidth}px`,
+      }"
+      :offsetX="scrollX"
+      :offsetY="scrollY"
+      :previewVolumeEdit
+    />
+    <div
+      class="sequencer-overlay"
+      :style="{
+        marginRight: `${scrollBarWidth}px`,
+        marginBottom: `${scrollBarWidth}px`,
+      }"
+    >
+      <div
+        ref="rectSelectHitbox"
+        class="rect-select-preview"
+        :style="{
+          display: isRectSelecting ? 'block' : 'none',
+          left: `${Math.min(rectSelectStartX, cursorX)}px`,
+          top: `${Math.min(rectSelectStartY, cursorY)}px`,
+          width: `${Math.abs(cursorX - rectSelectStartX)}px`,
+          height: `${Math.abs(cursorY - rectSelectStartY)}px`,
+        }"
+      ></div>
+      <SequencerPhraseIndicator
+        v-for="phraseInfo in phraseInfosInOtherTracks"
+        :key="phraseInfo.key"
+        :phraseKey="phraseInfo.key"
+        :isInSelectedTrack="false"
+        class="sequencer-phrase-indicator"
+        :style="{
           width: `${phraseInfo.width}px`,
           transform: `translateX(${phraseInfo.x - scrollX}px)`,
-        }" />
-      <SequencerPhraseIndicator v-for="phraseInfo in phraseInfosInSelectedTrack" :key="phraseInfo.key"
-        :phraseKey="phraseInfo.key" isInSelectedTrack class="sequencer-phrase-indicator" :style="{
+        }"
+      />
+      <SequencerPhraseIndicator
+        v-for="phraseInfo in phraseInfosInSelectedTrack"
+        :key="phraseInfo.key"
+        :phraseKey="phraseInfo.key"
+        isInSelectedTrack
+        class="sequencer-phrase-indicator"
+        :style="{
           width: `${phraseInfo.width}px`,
           transform: `translateX(${phraseInfo.x - scrollX}px)`,
-        }" />
-      <div class="sequencer-playhead" data-testid="sequencer-playhead" :style="{
-        transform: `translateX(${playheadX - scrollX}px)`,
-      }"></div>
+        }"
+      />
+      <div
+        class="sequencer-playhead"
+        data-testid="sequencer-playhead"
+        :style="{
+          transform: `translateX(${playheadX - scrollX}px)`,
+        }"
+      ></div>
     </div>
-    <QSlider :modelValue="zoomX" :min="ZOOM_X_MIN" :max="ZOOM_X_MAX" :step="ZOOM_X_STEP" class="zoom-x-slider"
-      trackSize="2px" @update:modelValue="setZoomX" />
-    <QSlider :modelValue="zoomY" :min="ZOOM_Y_MIN" :max="ZOOM_Y_MAX" :step="ZOOM_Y_STEP" vertical reverse
-      class="zoom-y-slider" trackSize="2px" @update:modelValue="setZoomY" />
-    <ContextMenu v-if="editTarget === 'NOTE'" ref="contextMenu" :menudata="contextMenuData" />
+    <QSlider
+      :modelValue="zoomX"
+      :min="ZOOM_X_MIN"
+      :max="ZOOM_X_MAX"
+      :step="ZOOM_X_STEP"
+      class="zoom-x-slider"
+      trackSize="2px"
+      @update:modelValue="setZoomX"
+    />
+    <QSlider
+      :modelValue="zoomY"
+      :min="ZOOM_Y_MIN"
+      :max="ZOOM_Y_MAX"
+      :step="ZOOM_Y_STEP"
+      vertical
+      reverse
+      class="zoom-y-slider"
+      trackSize="2px"
+      @update:modelValue="setZoomY"
+    />
+    <ContextMenu
+      v-if="editTarget === 'NOTE'"
+      ref="contextMenu"
+      :menudata="contextMenuData"
+    />
   </div>
 </template>
 
@@ -1687,7 +1781,8 @@ const contextMenuData = computed<ContextMenuItemData[]>(() => {
   pointer-events: none;
 }
 
-.sequencer-volume .sequencer-pitch {
+.sequencer-volume,
+.sequencer-pitch {
   grid-row: 2;
   grid-column: 2;
 }
