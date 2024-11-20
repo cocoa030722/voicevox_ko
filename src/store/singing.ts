@@ -2264,13 +2264,13 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
           track.pitchEditData,
           context.snapshot.editorFrameRate,
         );
+        clonedQuery.volume = clonedSingingVolume;
         applyVolumeEdit(
           clonedQuery,
           phrase.startTime,
           track.volumeEditData,
           context.snapshot.editorFrameRate,
         );
-        clonedQuery.volume = clonedSingingVolume;
         return {
           singer: track.singer,
           queryForSingingVoiceSynthesis: clonedQuery,

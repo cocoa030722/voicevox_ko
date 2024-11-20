@@ -572,7 +572,7 @@ export function applyVolumeEdit(
   );
   const phraseQueryEndFrame = phraseQueryStartFrame + phraseQueryFrameLength;
 
-  // ピッチ編集をf0に適用する
+  // ボリューム編集をvolumeに適用する
   const startFrame = Math.max(0, phraseQueryStartFrame);
   const endFrame = Math.min(volumeEditData.length, phraseQueryEndFrame);
   for (let i = startFrame; i < endFrame; i++) {
