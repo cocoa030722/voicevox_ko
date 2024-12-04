@@ -70,6 +70,7 @@ import {
   tickToSecond,
   VALUE_INDICATING_NO_DATA,
   isValidPitchEditData,
+  isValidVolumeEditData,
   calculatePhraseKey,
   isValidTempos,
   isValidTimeSignatures,
@@ -87,6 +88,7 @@ import {
   shouldPlayTracks,
   decibelToLinear,
   applyPitchEdit,
+  applyVolumeEdit,
 } from "@/sing/domain";
 import { getOverlappingNoteIds } from "@/sing/storeHelper";
 import {
@@ -1215,6 +1217,60 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
     },
   },
 
+  SET_VOLUME_EDIT_DATA: {
+    // ボリューム編集データをセットする。
+    // track.volumeEditDataの長さが足りない場合は、伸長も行う。
+    mutation(state, { volumeArray, startFrame, trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      const volumeEditData = track.volumeEditData;
+      const tempData = [...volumeEditData];
+      const endFrame = startFrame + volumeArray.length;
+      if (tempData.length < endFrame) {
+        const valuesToPush = new Array<number>(endFrame - tempData.length).fill(
+          VALUE_INDICATING_NO_DATA,
+        );
+        tempData.push(...valuesToPush);
+      }
+      tempData.splice(startFrame, volumeArray.length, ...volumeArray);
+      track.volumeEditData = tempData;
+    },
+    async action({ actions, mutations }, { volumeArray, startFrame, trackId }) {
+      if (startFrame < 0) {
+        throw new Error("startFrame must be greater than or equal to 0.");
+      }
+      if (!isValidVolumeEditData(volumeArray)) {
+        throw new Error("The volume edit data is invalid.");
+      }
+      mutations.SET_VOLUME_EDIT_DATA({ volumeArray, startFrame, trackId });
+
+      void actions.RENDER();
+    },
+  },
+
+  ERASE_VOLUME_EDIT_DATA: {
+    mutation(state, { startFrame, frameLength, trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      const volumeEditData = track.volumeEditData;
+      const tempData = [...volumeEditData];
+      const endFrame = Math.min(startFrame + frameLength, tempData.length);
+      tempData.fill(VALUE_INDICATING_NO_DATA, startFrame, endFrame);
+      track.volumeEditData = tempData;
+    },
+  },
+
+  CLEAR_VOLUME_EDIT_DATA: {
+    // ボリューム編集データを失くす。
+    mutation(state, { trackId }) {
+      const track = getOrThrow(state.tracks, trackId);
+      track.volumeEditData = [];
+    },
+    async action({ actions, mutations }, { trackId }) {
+      mutations.CLEAR_VOLUME_EDIT_DATA({ trackId });
+
+      void actions.RENDER();
+    },
+  },
+
   SET_PHRASES: {
     mutation(state, { phrases }) {
       state.phrases = phrases;
@@ -2076,6 +2132,12 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
           track.pitchEditData,
           context.snapshot.editorFrameRate,
         );
+        applyVolumeEdit(
+          clonedQuery,
+          phrase.startTime,
+          track.volumeEditData,
+          context.snapshot.editorFrameRate,
+        );
         return {
           engineId: track.singer.engineId,
           engineFrameRate: query.frameRate,
@@ -2221,6 +2283,12 @@ export const singingStore = createPartialStore<SingingStoreTypes>({
           context.snapshot.editorFrameRate,
         );
         clonedQuery.volume = clonedSingingVolume;
+        applyVolumeEdit(
+          clonedQuery,
+          phrase.startTime,
+          track.volumeEditData,
+          context.snapshot.editorFrameRate,
+        );
         return {
           singer: track.singer,
           queryForSingingVoiceSynthesis: clonedQuery,
@@ -3424,6 +3492,54 @@ export const singingCommandStore = transformCommandStore(
           throw new Error("frameLength must be at least 1.");
         }
         mutations.COMMAND_ERASE_PITCH_EDIT_DATA({
+          startFrame,
+          frameLength,
+          trackId,
+        });
+
+        void actions.RENDER();
+      },
+    },
+    COMMAND_SET_VOLUME_EDIT_DATA: {
+      mutation(draft, { volumeArray, startFrame, trackId }) {
+        singingStore.mutations.SET_VOLUME_EDIT_DATA(draft, {
+          volumeArray,
+          startFrame,
+          trackId,
+        });
+      },
+      action({ mutations, actions }, { volumeArray, startFrame, trackId }) {
+        if (startFrame < 0) {
+          throw new Error("startFrame must be greater than or equal to 0.");
+        }
+        if (!isValidVolumeEditData(volumeArray)) {
+          throw new Error("The volume edit data is invalid.");
+        }
+        mutations.COMMAND_SET_VOLUME_EDIT_DATA({
+          volumeArray,
+          startFrame,
+          trackId,
+        });
+
+        void actions.RENDER();
+      },
+    },
+    COMMAND_ERASE_VOLUME_EDIT_DATA: {
+      mutation(draft, { startFrame, frameLength, trackId }) {
+        singingStore.mutations.ERASE_VOLUME_EDIT_DATA(draft, {
+          startFrame,
+          frameLength,
+          trackId,
+        });
+      },
+      action({ mutations, actions }, { startFrame, frameLength, trackId }) {
+        if (startFrame < 0) {
+          throw new Error("startFrame must be greater than or equal to 0.");
+        }
+        if (frameLength < 1) {
+          throw new Error("frameLength must be at least 1.");
+        }
+        mutations.COMMAND_ERASE_VOLUME_EDIT_DATA({
           startFrame,
           frameLength,
           trackId,

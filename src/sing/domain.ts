@@ -375,6 +375,7 @@ export function createDefaultTrack(): Track {
     volumeRangeAdjustment: 0,
     notes: [],
     pitchEditData: [],
+    volumeEditData: [],
 
     solo: false,
     mute: false,
@@ -411,6 +412,14 @@ export function isValidVolumeRangeAdjustment(volumeRangeAdjustment: number) {
 
 export function isValidPitchEditData(pitchEditData: number[]) {
   return pitchEditData.every(
+    (value) =>
+      Number.isFinite(value) &&
+      (value > 0 || value === VALUE_INDICATING_NO_DATA),
+  );
+}
+
+export function isValidVolumeEditData(volumeEditData: number[]) {
+  return volumeEditData.every(
     (value) =>
       Number.isFinite(value) &&
       (value > 0 || value === VALUE_INDICATING_NO_DATA),
@@ -940,6 +949,45 @@ export function applyPitchEdit(
     const voiced = !unvoicedPhonemes.includes(phoneme);
     if (voiced && pitchEditData[i] !== VALUE_INDICATING_NO_DATA) {
       f0[i - phraseQueryStartFrame] = pitchEditData[i];
+    }
+  }
+}
+
+export function applyVolumeEdit(
+  phraseQuery: EditorFrameAudioQuery,
+  phraseStartTime: number,
+  volumeEditData: number[],
+  editorFrameRate: number,
+) {
+  // フレーズのクエリのフレームレートとエディターのフレームレートが一致しない場合はエラー
+  // TODO: 補間するようにする
+  if (phraseQuery.frameRate !== editorFrameRate) {
+    throw new Error(
+      "The frame rate between the phrase query and the editor does not match.",
+    );
+  }
+  const volume = phraseQuery.volume;
+  const phonemes = phraseQuery.phonemes;
+
+  // 各フレームの音素の配列を生成する
+  const framePhonemes = convertToFramePhonemes(phonemes);
+  if (volume.length !== framePhonemes.length) {
+    throw new Error("volume.length and framePhonemes.length do not match.");
+  }
+
+  // 歌い方の開始フレームと終了フレームを計算する
+  const phraseQueryFrameLength = volume.length;
+  const phraseQueryStartFrame = Math.round(
+    phraseStartTime * phraseQuery.frameRate,
+  );
+  const phraseQueryEndFrame = phraseQueryStartFrame + phraseQueryFrameLength;
+
+  // ボリューム編集をvolumeに適用する
+  const startFrame = Math.max(0, phraseQueryStartFrame);
+  const endFrame = Math.min(volumeEditData.length, phraseQueryEndFrame);
+  for (let i = startFrame; i < endFrame; i++) {
+    if (volumeEditData[i] !== VALUE_INDICATING_NO_DATA) {
+      volume[i - phraseQueryStartFrame] = volumeEditData[i];
     }
   }
 }

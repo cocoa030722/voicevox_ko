@@ -37,6 +37,25 @@
         ピッチ編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去
       </QTooltip>
     </QBtn>
+
+    <!-- ボリューム -->
+    <QBtn
+      dense
+      unelevated
+      class="segment-switch"
+      :class="{ active: editTarget === 'VOLUME' }"
+      @click="changeEditTarget('VOLUME')"
+    >
+      <QIcon name="timeline" size="20px" />
+      <QTooltip
+        :delay="500"
+        anchor="bottom middle"
+        transitionShow=""
+        transitionSide=""
+      >
+        ボリューム倍率編集<br />{{ !isMac ? "Ctrl" : "Cmd" }}+クリックで消去
+      </QTooltip>
+    </QBtn>
   </QBtnGroup>
 </template>
 

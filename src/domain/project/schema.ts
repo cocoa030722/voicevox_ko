@@ -92,6 +92,7 @@ export const trackSchema = z.object({
   volumeRangeAdjustment: z.number(), // 声量調整量
   notes: z.array(noteSchema),
   pitchEditData: z.array(z.number()), // 値の単位はHzで、データが無いところはVALUE_INDICATING_NO_DATAの値
+  volumeEditData: z.array(z.number()), // 値の単位はdBで、データが無いところはVALUE_INDICATING_NO_DATAの値
 
   solo: z.boolean(),
   mute: z.boolean(),

@@ -6,6 +6,9 @@ import { isMac } from "@/helpers/platform";
 const BASE_X_PER_QUARTER_NOTE = 120;
 const BASE_Y_PER_SEMITONE = 30;
 
+const PIXELS_PER_DECIBEL = 6;
+const DECIBEL_VIEW_OFFSET = 100;
+
 export const ZOOM_X_MIN = 0.15;
 export const ZOOM_X_MAX = 2;
 export const ZOOM_X_STEP = 0.05;
@@ -38,6 +41,14 @@ export function baseYToNoteNumber(baseY: number, integer = true) {
   return integer
     ? 127 - Math.floor(baseY / BASE_Y_PER_SEMITONE)
     : 127.5 - baseY / BASE_Y_PER_SEMITONE;
+}
+
+export function viewYToDecibel(viewY: number) {
+  return -((viewY - DECIBEL_VIEW_OFFSET) / PIXELS_PER_DECIBEL);
+}
+
+export function decibelToViewY(decibel: number) {
+  return -decibel * PIXELS_PER_DECIBEL + DECIBEL_VIEW_OFFSET;
 }
 
 export function getPitchFromNoteNumber(noteNumber: number) {
@@ -133,6 +144,20 @@ export async function calculatePitchDataHash(pitchData: PitchData) {
   return pitchDataHashSchema.parse(hash);
 }
 
+export type VolumeData = {
+  readonly ticksArray: number[];
+  readonly data: number[];
+};
+
+const VolumeDataHashSchema = z.string().brand<"VolumeDataHash">();
+
+export type VolumeDataHash = z.infer<typeof VolumeDataHashSchema>;
+
+export async function calculateVolumeDataHash(volumeData: VolumeData) {
+  const hash = await calculateHash(volumeData);
+  return VolumeDataHashSchema.parse(hash);
+}
+
 export type MouseButton = "LEFT_BUTTON" | "RIGHT_BUTTON" | "OTHER_BUTTON";
 
 export type PreviewMode =
@@ -142,7 +167,9 @@ export type PreviewMode =
   | "RESIZE_NOTE_RIGHT"
   | "RESIZE_NOTE_LEFT"
   | "DRAW_PITCH"
-  | "ERASE_PITCH";
+  | "ERASE_PITCH"
+  | "DRAW_VOLUME"
+  | "ERASE_VOLUME";
 
 export function getButton(event: MouseEvent): MouseButton {
   // macOSの場合、Ctrl+クリックは右クリック
