@@ -1,6 +1,10 @@
 # VOICEVOX
 
-voicevox 고수가 될거야!
+보이스복스 고수가 될거야!
+
+VOICEVOX 레포지토리의 한국어 번역입니다. 번역은 기계번역으로 진행됩니다.
+한국어 번역본을 별도의 파일로 추가하고, 마크업 등을 그대로 보존합니다.
+현재 원본 레포지토리와의 동기화를 보장하지 않습니다. 해결할 예정입니다.
 [![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox?label=Release)](https://github.com/VOICEVOX/voicevox/releases)
 [![build](https://github.com/VOICEVOX/voicevox/actions/workflows/build.yml/badge.svg)](https://github.com/VOICEVOX/voicevox/actions/workflows/build.yml)
 [![test](https://github.com/VOICEVOX/voicevox/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox/actions/workflows/test.yml)
